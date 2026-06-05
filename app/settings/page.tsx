@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { auth, signOut } from "@/auth";
 import { db } from "@/db";
 import { userSettings, type UserSettings } from "@/db/schema";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/default-system-prompt";
 import { SettingsForm } from "./form";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ async function getOrCreateSettings(email: string): Promise<UserSettings> {
       userId: email,
       currency: "AUD",
       villainDescription: villainSeed,
-      systemPrompt: "",
+      systemPrompt: DEFAULT_SYSTEM_PROMPT,
       weekdayBriefTime: "04:00",
       saturdayBriefTime: "07:00",
     })
@@ -62,6 +63,9 @@ export default async function SettingsPage() {
           <p className="text-sm text-neutral-500">Signed in as {email}</p>
         </div>
         <nav className="flex items-center gap-5 text-sm">
+          <Link href="/today" className="text-neutral-700 hover:underline">
+            Today
+          </Link>
           <Link
             href="/journal"
             className="text-neutral-700 hover:underline"
@@ -89,7 +93,11 @@ export default async function SettingsPage() {
           currentMonthlyRevenue: row.currentMonthlyRevenue ?? "",
           targetMonthlyRevenue: row.targetMonthlyRevenue ?? "",
           currency: row.currency ?? "AUD",
-          systemPrompt: row.systemPrompt ?? "",
+          // Fall back to the default if the user's stored prompt is empty
+          // (covers users created before this column was seeded).
+          systemPrompt: row.systemPrompt?.trim()
+            ? row.systemPrompt
+            : DEFAULT_SYSTEM_PROMPT,
           villainDescription: row.villainDescription ?? "",
           weekdayBriefTime: (row.weekdayBriefTime ?? "04:00").slice(0, 5),
           saturdayBriefTime: (row.saturdayBriefTime ?? "07:00").slice(0, 5),

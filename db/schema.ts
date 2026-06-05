@@ -8,6 +8,7 @@ import {
   date,
   time,
   timestamp,
+  jsonb,
   unique,
 } from "drizzle-orm/pg-core";
 
@@ -78,3 +79,53 @@ export const journalEntries = pgTable(
 
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type NewJournalEntry = typeof journalEntries.$inferInsert;
+
+// briefs — PRD §17.5
+// One row per (user_id, date). Mode signals the brief's framing.
+// Payload stores the full structured JSON returned by the AI so the
+// page can render without re-querying — sales scoreboard, villain
+// note, honest callout, watch_for, missed_journal_warning all live
+// in payload.
+export const briefs = pgTable(
+  "briefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    mode: text("mode").notNull(), // weekday | saturday | missed_journal_reset
+    payload: jsonb("payload").notNull(),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userDateUnique: unique("briefs_user_date_unique").on(t.userId, t.date),
+  }),
+);
+
+export type Brief = typeof briefs.$inferSelect;
+export type NewBrief = typeof briefs.$inferInsert;
+
+// brief_items — PRD §17.6
+// The Top 3 actionable items extracted from each brief's payload.
+// Stored separately so status updates (done/skipped/deferred) don't
+// rewrite the whole brief blob (those Server Actions land in Step 4).
+export const briefItems = pgTable("brief_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  briefId: uuid("brief_id")
+    .notNull()
+    .references(() => briefs.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(), // 1, 2, 3 — order in Top 3
+  task: text("task").notNull(),
+  tag: text("tag").notNull(), // do | delegate | delete | defer
+  sigil: text("sigil"),
+  why: text("why"),
+  status: text("status").default("pending").notNull(), // pending | done | skipped | deferred
+  skippedReasonCategory: text("skipped_reason_category"),
+  skippedReasonText: text("skipped_reason_text"),
+  deferredTo: timestamp("deferred_to", { withTimezone: true }),
+  deferredReason: text("deferred_reason"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type BriefItem = typeof briefItems.$inferSelect;
+export type NewBriefItem = typeof briefItems.$inferInsert;

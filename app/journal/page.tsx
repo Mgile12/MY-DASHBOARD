@@ -91,12 +91,14 @@ function Header({ email, today }: { email: string; today: string }) {
           {email} · today (AEST): {today}
         </p>
       </div>
-      <Link
-        href="/settings"
-        className="text-sm text-neutral-600 hover:underline"
-      >
-        Settings
-      </Link>
+      <nav className="flex items-center gap-5 text-sm">
+        <Link href="/today" className="text-neutral-700 hover:underline">
+          Today
+        </Link>
+        <Link href="/settings" className="text-neutral-700 hover:underline">
+          Settings
+        </Link>
+      </nav>
     </header>
   );
 }

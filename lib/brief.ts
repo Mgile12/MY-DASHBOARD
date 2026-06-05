@@ -14,6 +14,7 @@ import {
 import { aestToday, aestDayOfWeek } from "@/lib/date";
 import { DEFAULT_SYSTEM_PROMPT } from "./default-system-prompt";
 import { getStandardsWithStreaks, seedDefaultStandards } from "./standards";
+import { getCurrentOperatingRule } from "./weekly";
 
 // Model — per PRD §19.1. If the model name shifts, update here.
 const MODEL = "claude-sonnet-4-6";
@@ -299,11 +300,12 @@ export async function generateBriefForToday(
   // Build user message — structured data the AI reads
   const currentRev = Number(settings.currentMonthlyRevenue ?? 0);
   const targetRev = Number(settings.targetMonthlyRevenue ?? 0);
+  const weeklyRule = await getCurrentOperatingRule(email);
   const userPayload = {
     today_date: today,
     day_of_week: DAY_NAMES[dow],
     mode,
-    weekly_operating_rule: "", // empty until Sunday OODA exists (Step 7)
+    weekly_operating_rule: weeklyRule,
     pain: {
       current_monthly_revenue: currentRev,
       target_monthly_revenue: targetRev,

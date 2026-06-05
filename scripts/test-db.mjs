@@ -5,10 +5,10 @@ config({ path: ".env.local" });
 
 const sql = neon(process.env.DATABASE_URL);
 const cols = await sql`
-  select column_name, data_type, column_default
+  select column_name, data_type
   from information_schema.columns
-  where table_name = 'user_settings'
+  where table_name = 'weekly_reviews'
   order by ordinal_position
 `;
-console.log("user_settings columns:");
+console.log("weekly_reviews columns:");
 for (const c of cols) console.log(" ", c.column_name.padEnd(28), c.data_type);

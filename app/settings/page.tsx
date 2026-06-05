@@ -82,6 +82,12 @@ export default async function SettingsPage() {
             Journal
           </Link>
           <Link
+            href="/weekly"
+            className="text-neutral-700 hover:underline"
+          >
+            Weekly
+          </Link>
+          <Link
             href="/standards"
             className="text-neutral-700 hover:underline"
           >

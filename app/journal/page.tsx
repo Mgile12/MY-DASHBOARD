@@ -95,6 +95,9 @@ function Header({ email, today }: { email: string; today: string }) {
         <Link href="/today" className="text-neutral-700 hover:underline">
           Today
         </Link>
+        <Link href="/weekly" className="text-neutral-700 hover:underline">
+          Weekly
+        </Link>
         <Link href="/standards" className="text-neutral-700 hover:underline">
           Standards
         </Link>
@@ -111,10 +114,12 @@ function SundayPlaceholder() {
     <div className="rounded border border-neutral-300 p-5 bg-neutral-50 text-sm leading-6 text-neutral-800">
       <p className="font-semibold">Sunday — no journal today.</p>
       <p className="mt-1 text-neutral-600">
-        Per PRD §10.3, Sunday OODA replaces the nightly journal. The OODA
-        review screen lands in Step 7 of the build. Until then, Sunday is
-        rest. Browse recent entries below if you want a reflection on the
-        week.
+        Per PRD §10.3, the{" "}
+        <Link href="/weekly" className="underline font-medium">
+          Sunday OODA review
+        </Link>{" "}
+        replaces the nightly journal. Do that tonight. Browse recent entries
+        below if you want a reflection on the week.
       </p>
     </div>
   );

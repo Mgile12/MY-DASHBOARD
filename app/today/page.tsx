@@ -97,6 +97,9 @@ function Header({ email, today }: { email: string; today: string }) {
         <Link href="/journal" className="text-neutral-700 hover:underline">
           Journal
         </Link>
+        <Link href="/weekly" className="text-neutral-700 hover:underline">
+          Weekly
+        </Link>
         <Link href="/standards" className="text-neutral-700 hover:underline">
           Standards
         </Link>
@@ -113,8 +116,11 @@ function SundayPlaceholder() {
     <div className="rounded border border-neutral-300 p-5 bg-neutral-50 text-sm leading-6 text-neutral-800">
       <p className="font-semibold">Sunday — no morning brief.</p>
       <p className="mt-1 text-neutral-600">
-        Per PRD §10.3, Sunday has no morning brief. The Sunday OODA review
-        replaces it (Step 7 of the build). Until then, Sunday is rest.
+        Per PRD §10.3, Sunday has no morning brief. The{" "}
+        <Link href="/weekly" className="underline font-medium">
+          Sunday OODA review
+        </Link>{" "}
+        replaces it. Do that tonight.
       </p>
     </div>
   );

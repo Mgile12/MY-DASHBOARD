@@ -182,3 +182,36 @@ export const standardCheckins = pgTable(
 
 export type StandardCheckin = typeof standardCheckins.$inferSelect;
 export type NewStandardCheckin = typeof standardCheckins.$inferInsert;
+
+// weekly_reviews — PRD §17.7
+// One Sunday OODA per (user_id, week_start). week_start is the Monday of
+// the week being reviewed. observe stores the computed scoreboard JSON,
+// orient is the AI's interpretation text, decisions stores the structured
+// rule + reasoning, next_week_rule is denormalised for fast lookup by
+// brief generation. report_text is the long-form weekly report.
+export const weeklyReviews = pgTable(
+  "weekly_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    weekStart: date("week_start", { mode: "string" }).notNull(),
+    weekEnd: date("week_end", { mode: "string" }).notNull(),
+    observe: jsonb("observe").notNull(),
+    orient: text("orient"),
+    decisions: jsonb("decisions"),
+    nextWeekRule: text("next_week_rule"),
+    usefulnessRating: text("usefulness_rating"),
+    behaviourChangedRating: text("behaviour_changed_rating"),
+    reportText: text("report_text"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userWeekUnique: unique("weekly_reviews_user_week_unique").on(
+      t.userId,
+      t.weekStart,
+    ),
+  }),
+);
+
+export type WeeklyReview = typeof weeklyReviews.$inferSelect;
+export type NewWeeklyReview = typeof weeklyReviews.$inferInsert;

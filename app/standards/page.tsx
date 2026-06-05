@@ -122,6 +122,9 @@ function Header({ email }: { email: string }) {
         <Link href="/journal" className="text-neutral-700 hover:underline">
           Journal
         </Link>
+        <Link href="/weekly" className="text-neutral-700 hover:underline">
+          Weekly
+        </Link>
         <Link href="/settings" className="text-neutral-700 hover:underline">
           Settings
         </Link>

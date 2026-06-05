@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getTodayBrief, type BriefPayload } from "@/lib/brief";
 import { aestToday, isAestSunday } from "@/lib/date";
 import { GenerateButton } from "./generate-button";
+import { TelegramButton } from "./telegram-button";
 import { TaskItem, type SerializedBriefItem } from "./task-item";
 import type { BriefItem } from "@/db/schema";
 
@@ -63,14 +64,17 @@ async function BriefSection({ email }: { email: string }) {
         <MissedJournalWarning text={payload.missed_journal_warning} />
       )}
 
-      <footer className="border-t border-neutral-200 pt-4 text-xs text-neutral-500 flex items-center justify-between">
+      <footer className="border-t border-neutral-200 pt-4 text-xs text-neutral-500 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span>
           Mode: <strong>{payload.mode}</strong> · Generated:{" "}
           {data.brief.generatedAt
             ? formatAestTimestamp(data.brief.generatedAt)
             : "unknown"}
         </span>
-        <GenerateButton regenerate />
+        <div className="flex items-start gap-3">
+          <TelegramButton />
+          <GenerateButton regenerate />
+        </div>
       </footer>
     </div>
   );

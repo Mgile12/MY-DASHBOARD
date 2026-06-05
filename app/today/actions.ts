@@ -6,7 +6,13 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { briefs, briefItems } from "@/db/schema";
-import { generateBriefForToday, type GenerateResult } from "@/lib/brief";
+import {
+  generateBriefForToday,
+  getTodayBrief,
+  type BriefPayload,
+  type GenerateResult,
+} from "@/lib/brief";
+import { sendBriefToTelegram } from "@/lib/telegram";
 import { SKIP_CATEGORIES } from "./skip-categories";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +27,32 @@ export async function generateBriefAction(): Promise<GenerateResult> {
   const result = await generateBriefForToday(email);
   if (result.ok) revalidatePath("/today");
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Telegram send (Step 6) — manual trigger for testing without waiting
+// for cron. Cron uses the same lib/telegram path via /api/cron/morning-brief.
+// ---------------------------------------------------------------------------
+
+export type TelegramActionResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function sendBriefToTelegramAction(): Promise<TelegramActionResult> {
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) return { ok: false, error: "Not signed in" };
+
+  const brief = await getTodayBrief(email);
+  if (!brief) {
+    return {
+      ok: false,
+      error: "No brief generated for today yet. Generate one first.",
+    };
+  }
+
+  const payload = brief.brief.payload as unknown as BriefPayload;
+  return await sendBriefToTelegram(payload, brief.items);
 }
 
 // ---------------------------------------------------------------------------

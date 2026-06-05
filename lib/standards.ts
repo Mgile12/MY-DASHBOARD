@@ -33,7 +33,10 @@ export const DEFAULT_STANDARDS = [
     name: "Training",
     description:
       "Train 5 days a week — 4 strength + 1 cardio per the Villain.",
-    activeDays: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+    // Mon-Sat only — Sunday has no journal (OODA replaces it) so Sun
+    // can't be tracked via journal check-ins. Sunday tracking will come
+    // with the Sunday OODA feature in Step 7.
+    activeDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
   },
   {
     key: "nightly_journal",
@@ -92,10 +95,17 @@ export async function seedDefaultStandards(userId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Walks backwards from yesterday for up to `lookbackDays`. Days not in
+ * Walks backwards from TODAY (i=0) for up to `lookbackDays`. Days not in
  * the standard's active_days are SKIPPED (don't count, don't break).
- * Active days with hit=true increment the streak. Active days with a
- * missing checkin or hit=false break the streak.
+ *
+ * Today (i=0) is a special case: if there's no check-in yet for today,
+ * we skip rather than break — the user may simply not have filled in
+ * tonight's journal yet. That way submitting today's journal with
+ * hit=true immediately moves the streak counter (good UX) without
+ * penalising pre-journal page loads (good for the 4am brief).
+ *
+ * For all prior active days: hit=true increments; hit=false or missing
+ * check-in breaks.
  *
  * Per PRD §12.7: "Streaks only count on active days."
  * Per PRD §18.5: "Cold calling does not break on weekends."
@@ -107,13 +117,17 @@ export function computeStreak(
 ): number {
   const byDate = new Map(checkins.map((c) => [c.date, c.hit]));
   let streak = 0;
-  for (let i = 1; i <= lookbackDays; i++) {
+  for (let i = 0; i <= lookbackDays; i++) {
     const { ymd, dow } = aestDateMinusDays(i);
     const dayName = DAY_NAMES[dow];
     if (!activeDays.includes(dayName)) continue;
     const hit = byDate.get(ymd);
     if (hit === true) {
       streak++;
+    } else if (i === 0 && hit === undefined) {
+      // Today, no journal submitted yet — fall through to yesterday's
+      // data instead of breaking.
+      continue;
     } else {
       break;
     }

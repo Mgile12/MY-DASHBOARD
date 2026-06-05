@@ -129,3 +129,56 @@ export const briefItems = pgTable("brief_items", {
 
 export type BriefItem = typeof briefItems.$inferSelect;
 export type NewBriefItem = typeof briefItems.$inferInsert;
+
+// standards — PRD §17.3
+// `key` is a stable code-side identifier (e.g. "training", "cold_calling_30min")
+// so the journal action can look up standards without depending on the
+// user-editable name. active_days is an array of "mon".."sun" strings;
+// streaks only count those days.
+export const standards = pgTable(
+  "standards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    active: boolean("active").default(true).notNull(),
+    activeDays: text("active_days").array(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userKeyUnique: unique("standards_user_key_unique").on(t.userId, t.key),
+  }),
+);
+
+export type Standard = typeof standards.$inferSelect;
+export type NewStandard = typeof standards.$inferInsert;
+
+// standard_checkins — PRD §17.4
+// One row per (standard_id, date). `value` is an optional numeric for
+// quantitative standards (e.g. "Calls made" stores the count, "hit" still
+// answers the boolean threshold). `notes` is reserved for future use.
+export const standardCheckins = pgTable(
+  "standard_checkins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    standardId: uuid("standard_id")
+      .notNull()
+      .references(() => standards.id, { onDelete: "cascade" }),
+    date: date("date", { mode: "string" }).notNull(),
+    hit: boolean("hit").notNull(),
+    value: numeric("value"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    standardDateUnique: unique("standard_checkins_standard_date_unique").on(
+      t.standardId,
+      t.date,
+    ),
+  }),
+);
+
+export type StandardCheckin = typeof standardCheckins.$inferSelect;
+export type NewStandardCheckin = typeof standardCheckins.$inferInsert;

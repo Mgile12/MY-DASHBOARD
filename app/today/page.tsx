@@ -93,6 +93,9 @@ function Header({ email, today }: { email: string; today: string }) {
         <Link href="/journal" className="text-neutral-700 hover:underline">
           Journal
         </Link>
+        <Link href="/standards" className="text-neutral-700 hover:underline">
+          Standards
+        </Link>
         <Link href="/settings" className="text-neutral-700 hover:underline">
           Settings
         </Link>

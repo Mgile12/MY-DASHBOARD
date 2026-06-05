@@ -6,6 +6,10 @@ import { db } from "@/db";
 import { journalEntries } from "@/db/schema";
 import { auth } from "@/auth";
 import { aestToday, isAestSunday } from "@/lib/date";
+import {
+  seedDefaultStandards,
+  writeStandardCheckins,
+} from "@/lib/standards";
 
 // Number-like string → null | string. Same pattern as settings/actions.ts
 // for consistency with how numerics flow through Drizzle.
@@ -153,6 +157,45 @@ export async function saveJournal(
     };
   }
 
+  // Mirror the journal's standards check-ins into standard_checkins so
+  // streak math (lib/standards.ts) and the brief can read structured
+  // data. Idempotent — runs after every journal save, upserts by
+  // (standard_id, date). Defensive seed in case the user hasn't hit
+  // /settings yet.
+  try {
+    await seedDefaultStandards(email);
+    await writeStandardCheckins(email, today, [
+      {
+        key: "training",
+        hit: insertValues.trainingCompleted === true,
+      },
+      {
+        // Submitting the journal IS the standard.
+        key: "nightly_journal",
+        hit: true,
+      },
+      {
+        key: "cold_calling_30min",
+        hit: insertValues.coldCallingCompleted === true,
+      },
+      {
+        key: "calls_made",
+        hit: insertValues.callsMade > 0,
+        value: insertValues.callsMade.toString(),
+      },
+      {
+        key: "client_delivery_block",
+        hit: insertValues.clientDeliveryCompleted === true,
+      },
+    ]);
+  } catch (e) {
+    // Don't fail the journal save if checkin write fails — log and
+    // continue. The journal_entries row is the source of truth; check-ins
+    // are a derived index.
+    console.error("writeStandardCheckins failed:", e);
+  }
+
   revalidatePath("/journal");
+  revalidatePath("/standards");
   return { ok: true };
 }

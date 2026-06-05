@@ -13,6 +13,7 @@ import {
 } from "@/db/schema";
 import { aestToday, aestDayOfWeek } from "@/lib/date";
 import { DEFAULT_SYSTEM_PROMPT } from "./default-system-prompt";
+import { getStandardsWithStreaks, seedDefaultStandards } from "./standards";
 
 // Model — per PRD §19.1. If the model name shifts, update here.
 const MODEL = "claude-sonnet-4-6";
@@ -163,10 +164,16 @@ async function fetchContext(email: string) {
       deferred_reason: r.item.deferredReason,
     }));
 
+  // Standards + current streaks — defensive seed in case the user
+  // hasn't visited /settings or /standards yet.
+  await seedDefaultStandards(email);
+  const standardsWithStreaks = await getStandardsWithStreaks(email);
+
   return {
     settings: settingsRows[0] ?? null,
     journals,
     recentNonPendingItems,
+    standardsWithStreaks,
   };
 }
 
@@ -270,7 +277,8 @@ export async function generateBriefForToday(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "ANTHROPIC_API_KEY not set" };
 
-  const { settings, journals, recentNonPendingItems } = await fetchContext(email);
+  const { settings, journals, recentNonPendingItems, standardsWithStreaks } =
+    await fetchContext(email);
   if (!settings)
     return { ok: false, error: "Settings not initialised — visit /settings first" };
 
@@ -327,6 +335,16 @@ export async function generateBriefForToday(
     // Per PRD §13: if Mitchell has skipped/deferred the same task 2+ days
     // in a row, the AI calls it out by name. This array gives the receipts.
     recent_skipped_or_deferred_last_7_days: recentNonPendingItems,
+    // Standards and current streaks (PRD §12.7). The system prompt's
+    // "streaks matter" rule uses this — if a streak broke yesterday,
+    // the brief should lead with it.
+    standards: standardsWithStreaks.map((s) => ({
+      key: s.key,
+      name: s.name,
+      active: s.active,
+      active_days: s.activeDays,
+      current_streak: s.streak,
+    })),
   };
 
   const userMessage =

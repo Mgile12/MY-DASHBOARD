@@ -6,6 +6,7 @@ import { auth, signOut } from "@/auth";
 import { db } from "@/db";
 import { userSettings, type UserSettings } from "@/db/schema";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/default-system-prompt";
+import { seedDefaultStandards } from "@/lib/standards";
 import { SettingsForm } from "./form";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,12 @@ async function getOrCreateSettings(email: string): Promise<UserSettings> {
     .where(eq(userSettings.userId, email))
     .limit(1);
 
-  if (existing[0]) return existing[0];
+  if (existing[0]) {
+    // Defensive — also seed default standards for users who signed up
+    // before standards existed. Idempotent.
+    await seedDefaultStandards(email);
+    return existing[0];
+  }
 
   const villainSeed = await loadVillainSeed();
   const inserted = await db
@@ -40,6 +46,9 @@ async function getOrCreateSettings(email: string): Promise<UserSettings> {
       saturdayBriefTime: "07:00",
     })
     .returning();
+
+  // Seed default standards alongside user_settings.
+  await seedDefaultStandards(email);
 
   return inserted[0];
 }
@@ -71,6 +80,12 @@ export default async function SettingsPage() {
             className="text-neutral-700 hover:underline"
           >
             Journal
+          </Link>
+          <Link
+            href="/standards"
+            className="text-neutral-700 hover:underline"
+          >
+            Standards
           </Link>
           <form
             action={async () => {

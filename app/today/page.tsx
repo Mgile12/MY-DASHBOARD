@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getTodayBrief, type BriefPayload } from "@/lib/brief";
 import { aestToday, isAestSunday } from "@/lib/date";
 import { GenerateButton } from "./generate-button";
+import { TaskItem, type SerializedBriefItem } from "./task-item";
 import type { BriefItem } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
@@ -220,56 +221,33 @@ function HonestCallout({ text }: { text: string }) {
 }
 
 function Top3({ items }: { items: BriefItem[] }) {
+  // Convert Drizzle BriefItem (with Date fields) → JSON-safe SerializedBriefItem
+  // before crossing the RSC → Client Component boundary.
+  const serialized: SerializedBriefItem[] = items.map((i) => ({
+    id: i.id,
+    position: i.position,
+    task: i.task,
+    tag: i.tag,
+    sigil: i.sigil,
+    why: i.why,
+    status: i.status,
+    skippedReasonCategory: i.skippedReasonCategory,
+    skippedReasonText: i.skippedReasonText,
+    deferredTo: i.deferredTo ? i.deferredTo.toISOString() : null,
+    deferredReason: i.deferredReason,
+  }));
+
   return (
     <section>
       <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 mb-3">
         Top 3
       </h2>
       <ol className="flex flex-col gap-3">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="border border-neutral-200 rounded p-3 flex flex-col gap-1"
-          >
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="font-semibold">
-                {item.position}. {item.task}
-              </span>
-              <TagPill tag={item.tag} />
-            </div>
-            {item.sigil && (
-              <span className="text-xs text-neutral-500">
-                Sigil: {item.sigil}
-              </span>
-            )}
-            {item.why && (
-              <p className="text-sm text-neutral-700 mt-1">{item.why}</p>
-            )}
-            <span className="text-xs text-neutral-400 mt-1">
-              status: {item.status} · actions land in Step 4
-            </span>
-          </li>
+        {serialized.map((item) => (
+          <TaskItem key={item.id} item={item} />
         ))}
       </ol>
     </section>
-  );
-}
-
-function TagPill({ tag }: { tag: string }) {
-  const colour =
-    tag === "do"
-      ? "bg-black text-white"
-      : tag === "delegate"
-        ? "bg-blue-700 text-white"
-        : tag === "delete"
-          ? "bg-neutral-500 text-white"
-          : "bg-amber-700 text-white";
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${colour}`}
-    >
-      {tag}
-    </span>
   );
 }
 

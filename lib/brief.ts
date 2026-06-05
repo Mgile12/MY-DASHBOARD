@@ -123,6 +123,7 @@ async function fetchContext(email: string) {
   // Pull the last 14 days of journals — used for "this week", "yesterday",
   // and missed-journal detection.
   const fourteenDaysAgo = ymdAest(14);
+  const sevenDaysAgo = ymdAest(7);
   const today = aestToday();
   const journals = await db
     .select()
@@ -136,7 +137,37 @@ async function fetchContext(email: string) {
     )
     .orderBy(desc(journalEntries.date));
 
-  return { settings: settingsRows[0] ?? null, journals };
+  // Brief items from the last 7 days that aren't pending — feeds the
+  // "call out dodging" behaviour per PRD §13. The AI sees the history
+  // of what's been skipped or deferred and references it.
+  const recentItemRows = await db
+    .select({ item: briefItems, briefDate: briefs.date })
+    .from(briefItems)
+    .innerJoin(briefs, eq(briefItems.briefId, briefs.id))
+    .where(and(eq(briefs.userId, email), gte(briefs.date, sevenDaysAgo)));
+
+  const recentNonPendingItems = recentItemRows
+    .filter(
+      (r) => r.item.status === "skipped" || r.item.status === "deferred",
+    )
+    .map((r) => ({
+      brief_date: r.briefDate,
+      task: r.item.task,
+      tag: r.item.tag,
+      status: r.item.status,
+      skipped_category: r.item.skippedReasonCategory,
+      skipped_reason: r.item.skippedReasonText,
+      deferred_to: r.item.deferredTo
+        ? r.item.deferredTo.toISOString().slice(0, 10)
+        : null,
+      deferred_reason: r.item.deferredReason,
+    }));
+
+  return {
+    settings: settingsRows[0] ?? null,
+    journals,
+    recentNonPendingItems,
+  };
 }
 
 // Walk backwards from yesterday (AEST) and count consecutive days
@@ -239,7 +270,7 @@ export async function generateBriefForToday(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "ANTHROPIC_API_KEY not set" };
 
-  const { settings, journals } = await fetchContext(email);
+  const { settings, journals, recentNonPendingItems } = await fetchContext(email);
   if (!settings)
     return { ok: false, error: "Settings not initialised — visit /settings first" };
 
@@ -293,6 +324,9 @@ export async function generateBriefForToday(
       cold_calling_completed: j.coldCallingCompleted ?? false,
       tale_type: j.taleType,
     })),
+    // Per PRD §13: if Mitchell has skipped/deferred the same task 2+ days
+    // in a row, the AI calls it out by name. This array gives the receipts.
+    recent_skipped_or_deferred_last_7_days: recentNonPendingItems,
   };
 
   const userMessage =

@@ -67,7 +67,7 @@ async function BriefSection({ email }: { email: string }) {
         <span>
           Mode: <strong>{payload.mode}</strong> · Generated:{" "}
           {data.brief.generatedAt
-            ? new Date(data.brief.generatedAt).toLocaleString()
+            ? formatAestTimestamp(data.brief.generatedAt)
             : "unknown"}
         </span>
         <GenerateButton regenerate />
@@ -275,4 +275,20 @@ function MissedJournalWarning({ text }: { text: string }) {
       <p className="text-sm text-amber-900">{text}</p>
     </section>
   );
+}
+
+// Deterministic AEST timestamp formatter — avoids locale-dependent
+// toLocaleString() output that varies between server (likely en-US/UTC)
+// and what an Australian user expects.
+function formatAestTimestamp(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "?";
+  const AEST_OFFSET_MS = 10 * 60 * 60 * 1000;
+  const a = new Date(date.getTime() + AEST_OFFSET_MS);
+  const y = a.getUTCFullYear();
+  const mo = String(a.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(a.getUTCDate()).padStart(2, "0");
+  const hh = String(a.getUTCHours()).padStart(2, "0");
+  const mm = String(a.getUTCMinutes()).padStart(2, "0");
+  return `${y}-${mo}-${day} ${hh}:${mm} AEST`;
 }

@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { briefs, briefItems } from "@/db/schema";
 import { generateBriefForToday, type GenerateResult } from "@/lib/brief";
+import { SKIP_CATEGORIES } from "./skip-categories";
 
 // ---------------------------------------------------------------------------
 // Brief generation (Step 3)
@@ -27,19 +28,6 @@ export async function generateBriefAction(): Promise<GenerateResult> {
 // ---------------------------------------------------------------------------
 
 export type TaskActionResult = { ok: true } | { ok: false; error: string };
-
-// PRD §12.4 skip categories
-export const SKIP_CATEGORIES = [
-  "avoided_it",
-  "genuinely_impossible",
-  "client_emergency",
-  "family_personal",
-  "wrong_priority",
-  "unclear_task",
-  "other",
-] as const;
-
-export type SkipCategory = (typeof SKIP_CATEGORIES)[number];
 
 // Verify the brief_item belongs to a brief owned by the signed-in user.
 // Returns null if not found or not owned.
@@ -149,16 +137,20 @@ export async function markDeferredAction(
   }
 
   const str = parsed.data.deferredTo;
+  // Parse as UTC midnight so toISOString().slice(0,10) matches what the
+  // user picked regardless of where the server runs. (Without the Z, the
+  // string is parsed as local time and the date can drift by a day when
+  // server tz differs from client tz.)
   const deferDate = str.includes("T")
-    ? new Date(str)
-    : new Date(`${str}T00:00:00`);
+    ? new Date(str.endsWith("Z") ? str : `${str}Z`)
+    : new Date(`${str}T00:00:00.000Z`);
 
   if (isNaN(deferDate.getTime())) {
     return { ok: false, error: "Invalid date" };
   }
 
-  // Must be in the future. Use 1-hour buffer to avoid timezone gotchas.
-  if (deferDate.getTime() < Date.now() - 3600_000) {
+  // Must be in the future. Use 1-day buffer for timezone tolerance.
+  if (deferDate.getTime() < Date.now() - 86_400_000) {
     return { ok: false, error: "Defer date must be in the future" };
   }
 

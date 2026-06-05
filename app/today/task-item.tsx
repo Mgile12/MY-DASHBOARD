@@ -8,6 +8,7 @@ import {
   resetItemAction,
   type TaskActionResult,
 } from "./actions";
+import { SKIP_OPTIONS, skipCategoryLabel } from "./skip-categories";
 
 // Mirror of BriefItem with Date fields converted to strings (RSC serialisation
 // boundary). The Server Component does the conversion before passing.
@@ -26,17 +27,6 @@ export type SerializedBriefItem = {
 };
 
 type Mode = "view" | "skip" | "defer";
-
-// PRD §12.4 categories
-const SKIP_OPTIONS: { value: string; label: string }[] = [
-  { value: "avoided_it", label: "I avoided it" },
-  { value: "genuinely_impossible", label: "Genuinely impossible" },
-  { value: "client_emergency", label: "Client emergency" },
-  { value: "family_personal", label: "Family / personal" },
-  { value: "wrong_priority", label: "Wrong priority" },
-  { value: "unclear_task", label: "Unclear task" },
-  { value: "other", label: "Other" },
-];
 
 export function TaskItem({ item }: { item: SerializedBriefItem }) {
   const [mode, setMode] = useState<Mode>("view");
@@ -89,7 +79,7 @@ export function TaskItem({ item }: { item: SerializedBriefItem }) {
 
       {item.status === "skipped" && (
         <CompletedRow
-          label={`Skipped — ${skipLabel(item.skippedReasonCategory)}${
+          label={`Skipped — ${skipCategoryLabel(item.skippedReasonCategory)}${
             item.skippedReasonText ? `: ${item.skippedReasonText}` : ""
           }`}
           colour="text-red-700"
@@ -278,19 +268,12 @@ function CompletedRow({
   );
 }
 
-function skipLabel(value: string | null): string {
-  if (!value) return "(no category)";
-  return SKIP_OPTIONS.find((o) => o.value === value)?.label ?? value;
-}
-
+// Use the ISO string's YYYY-MM-DD prefix directly — avoids any Date
+// constructor / locale formatting that would cause server (UTC) and
+// client (AEST) to render different strings → hydration mismatch.
 function formatDeferDate(iso: string | null): string {
   if (!iso) return "?";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return iso.slice(0, 10);
 }
 
 function tomorrowISO(): string {

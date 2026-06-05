@@ -38,7 +38,7 @@ He is me, but he has already hit $10k AUD/mo and is on his way to $15k. He doesn
 
 ### Wealth & Income
 
-- $10k/mo is the floor. Already at $15k with two paying clients and a third closing this month.
+- $10k/mo is the floor. Already at $12k with two paying clients and a third closing this month.
 - 8am-10am Monday to Friday is sacred. 30+ cold calls every day, no excuses. Sick, hungover, tired. Doesn't matter. Calls happen before client work, before meetings, before email. They are the first commercial act of the day. Monday's 10am and 12pm meetings do not move this block — the block moves them out of the way.
 - 5+ active prospects in the pipeline at all times. Knows each one's stage and next move.
 - EFA work generates $8k/mo and takes 20 hours a week, not 40, because he delegates content production, ad execution, and admin to Aussie freelancers at $30-50/hr.
@@ -103,3 +103,4 @@ Read this out loud. If you don't feel uncomfortable standing next to this man, r
 
 - **2026-06-05** — v0 draft seeded from /office-hours. Edit before Day 1 of the build.
 - **2026-06-05** — v0.1: training updated to 5 days/week (4 strength + 1 cardio). Cold call block moved to 8am-10am to accommodate Monday meetings at 10am and 12pm. Block reframed as the first commercial act of the day.
+- **2026-06-05** — v0.2: Villain current MRR adjusted from $15k to $12k. Gap calibrated to feel close enough to chase, not so far it becomes abstract. 12-month picture ($20k/mo) unchanged.

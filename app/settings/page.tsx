@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
@@ -60,19 +61,27 @@ export default async function SettingsPage() {
           <h1 className="text-2xl font-semibold">Settings</h1>
           <p className="text-sm text-neutral-500">Signed in as {email}</p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/api/auth/signin" });
-          }}
-        >
-          <button
-            type="submit"
-            className="text-sm text-neutral-600 hover:underline"
+        <nav className="flex items-center gap-5 text-sm">
+          <Link
+            href="/journal"
+            className="text-neutral-700 hover:underline"
           >
-            Sign out
-          </button>
-        </form>
+            Journal
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/api/auth/signin" });
+            }}
+          >
+            <button
+              type="submit"
+              className="text-neutral-600 hover:underline"
+            >
+              Sign out
+            </button>
+          </form>
+        </nav>
       </header>
 
       <SettingsForm

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { generateOodaAction } from "./actions";
+import { regenerateOodaAction } from "./actions";
 
+// Regenerates the current week's review using the reflections already
+// saved on the row. The empty-state path uses <ReflectionForm /> instead.
 export function GenerateOodaButton({
   regenerate = false,
 }: {
@@ -19,7 +21,7 @@ export function GenerateOodaButton({
         onClick={() => {
           startTransition(async () => {
             setError(null);
-            const r = await generateOodaAction();
+            const r = await regenerateOodaAction();
             if (!r.ok) setError(r.error);
           });
         }}
@@ -28,8 +30,8 @@ export function GenerateOodaButton({
         {pending
           ? "Generating…"
           : regenerate
-            ? "Regenerate OODA"
-            : "Generate Sunday OODA"}
+            ? "Regenerate OODA Loop"
+            : "Generate Sunday OODA Loop"}
       </button>
       {error && (
         <pre className="text-red-600 text-xs whitespace-pre-wrap max-w-2xl">

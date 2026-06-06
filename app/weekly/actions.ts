@@ -10,25 +10,96 @@ import {
   currentWeekStart,
   generateOodaReview,
   type GenerateOodaResult,
+  type Reflections,
 } from "@/lib/weekly";
-import { BEHAVIOUR_OPTIONS, USEFULNESS_OPTIONS } from "./labels";
+import {
+  BEHAVIOUR_OPTIONS,
+  REFLECTION_QUESTIONS,
+  USEFULNESS_OPTIONS,
+} from "./labels";
 
 // ---------------------------------------------------------------------------
-// Generate (or regenerate) — calls Anthropic, upserts the weekly_review row.
+// Generate (or regenerate) the Sunday OODA Loop from user reflections.
+// PRD §12.8: AI uses the user's reflections plus the computed Observe
+// to produce Orient + Decide + report.
 // ---------------------------------------------------------------------------
 
-export async function generateOodaAction(): Promise<GenerateOodaResult> {
+function reflectionsSchema() {
+  // Build a Zod object dynamically from REFLECTION_QUESTIONS so the
+  // form labels and validation can never drift.
+  const shape: Record<string, z.ZodType<string>> = {};
+  for (const q of REFLECTION_QUESTIONS) {
+    shape[q.key] = q.required
+      ? z.string().trim().min(1, `${q.label} required`)
+      : z.string().trim().optional().transform((v) => v ?? "");
+  }
+  return z.object(shape);
+}
+
+export async function generateOodaAction(
+  formData: FormData,
+): Promise<GenerateOodaResult> {
   const session = await auth();
   const email = session?.user?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
-  const result = await generateOodaReview(email);
+  const raw: Record<string, string> = {};
+  for (const q of REFLECTION_QUESTIONS) {
+    raw[q.key] = formData.get(q.key)?.toString() ?? "";
+  }
+
+  const parsed = reflectionsSchema().safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const reflections = parsed.data as Reflections;
+  const result = await generateOodaReview(email, reflections);
   if (result.ok) revalidatePath("/weekly");
   return result;
 }
 
 // ---------------------------------------------------------------------------
-// Save edits to the current week's review.
+// Regenerate using the reflections already stored on this week's review row.
+// Used by the in-page "Regenerate OODA Loop" button when a review exists.
+// If reflections were never saved (legacy row), errors out cleanly.
+// ---------------------------------------------------------------------------
+
+export async function regenerateOodaAction(): Promise<GenerateOodaResult> {
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) return { ok: false, error: "Not signed in" };
+
+  const weekStart = currentWeekStart();
+  const rows = await db
+    .select({ reflections: weeklyReviews.reflections })
+    .from(weeklyReviews)
+    .where(
+      and(
+        eq(weeklyReviews.userId, email),
+        eq(weeklyReviews.weekStart, weekStart),
+      ),
+    )
+    .limit(1);
+
+  if (!rows[0] || !rows[0].reflections) {
+    return {
+      ok: false,
+      error:
+        "No saved reflections to regenerate from. Use 'Edit reflections and regenerate' instead.",
+    };
+  }
+
+  const result = await generateOodaReview(
+    email,
+    rows[0].reflections as Reflections,
+  );
+  if (result.ok) revalidatePath("/weekly");
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Save edits to the current week's review (rule + ratings).
 // PRD §12.8: user can accept or edit the AI's next-week rule.
 // PRD §16.1: usefulness + behaviour-changed ratings are the "brutally
 // useful" proxy.
@@ -98,7 +169,7 @@ export async function saveOodaAction(
     if (result.length === 0) {
       return {
         ok: false,
-        error: "No OODA review for this week yet — generate one first.",
+        error: "No OODA Loop review for this week yet — generate one first.",
       };
     }
   } catch (e) {

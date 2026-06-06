@@ -9,10 +9,13 @@ import {
 } from "@/lib/weekly";
 import { GenerateOodaButton } from "./generate-button";
 import { OodaForm } from "./form";
+import { ReflectionForm } from "./reflection-form";
 import {
   BEHAVIOUR_OPTIONS,
+  REFLECTION_QUESTIONS,
   USEFULNESS_OPTIONS,
   type BehaviourChangedRating,
+  type Reflections,
   type UsefulnessRating,
 } from "./labels";
 
@@ -60,7 +63,7 @@ function Header({
   return (
     <header className="mb-6 flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-semibold">Sunday OODA</h1>
+        <h1 className="text-2xl font-semibold">Sunday OODA Loop</h1>
         <p className="text-sm text-neutral-500">
           {email} · week of {weekStart} – {weekEnd} · today (AEST): {today}
         </p>
@@ -84,28 +87,30 @@ function Header({
 }
 
 // ---------------------------------------------------------------------------
-// Empty state — no review for this week yet
+// Empty state — no review for this week. User answers reflections, those
+// feed the AI for Orient + Decide.
 // ---------------------------------------------------------------------------
 
 function EmptyState() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="rounded border border-neutral-200 p-5 text-sm text-neutral-700 bg-neutral-50 leading-6">
-        <p className="font-semibold">No OODA review for this week yet.</p>
+        <p className="font-semibold">No OODA Loop for this week yet.</p>
         <p className="mt-1 text-neutral-600">
-          The AI will read this week&apos;s journals, briefs, sales numbers,
-          and standards, then produce: Observe (the scoreboard), Orient (what
-          the pattern means), and Decide (next week&apos;s operating rule).
-          You can edit the rule before saving.
+          Answer the six prompts below. Your answers go to Claude alongside
+          this week&apos;s journals, briefs, and sales numbers. Claude
+          cross-references what you <em>think</em> happened against the
+          receipts and produces Orient (the pattern) + Decide (next
+          week&apos;s rule) + a weekly report.
         </p>
       </div>
-      <GenerateOodaButton />
+      <ReflectionForm />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Review view — Observe + Orient + Decide form + report
+// Review view — Observe + Reflections + Orient + Decide form + report
 // ---------------------------------------------------------------------------
 
 type DecisionsJson = { next_week_rule?: string; reasoning?: string };
@@ -117,6 +122,7 @@ function ReviewView({
 }) {
   const observe = review.observe as unknown as ObservePayload;
   const decisions = (review.decisions ?? {}) as DecisionsJson;
+  const reflections = (review.reflections ?? {}) as Reflections;
 
   const usefulnessInitial = isUsefulness(review.usefulnessRating)
     ? review.usefulnessRating
@@ -128,6 +134,8 @@ function ReviewView({
   return (
     <div className="flex flex-col gap-8">
       <ObserveBlock observe={observe} />
+
+      <ReflectionsBlock reflections={reflections} />
 
       {review.orient && <OrientBlock orient={review.orient} />}
 
@@ -149,6 +157,8 @@ function ReviewView({
         </span>
         <GenerateOodaButton regenerate />
       </footer>
+
+      <EditReflectionsBlock reflections={reflections} />
     </div>
   );
 }
@@ -158,6 +168,66 @@ function isUsefulness(v: string | null): v is UsefulnessRating {
 }
 function isBehaviour(v: string | null): v is BehaviourChangedRating {
   return v !== null && (BEHAVIOUR_OPTIONS as readonly string[]).includes(v);
+}
+
+// ---------------------------------------------------------------------------
+// Reflections — read-only display of the user's saved OODA Loop answers.
+// (Edit-and-regenerate UI lives below the footer as a <details>.)
+// ---------------------------------------------------------------------------
+
+function ReflectionsBlock({ reflections }: { reflections: Reflections }) {
+  const hasAny = REFLECTION_QUESTIONS.some(
+    (q) => (reflections[q.key] ?? "").trim().length > 0,
+  );
+  if (!hasAny) return null;
+
+  return (
+    <section className="border-l-4 border-neutral-700 pl-4">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 mb-3">
+        Your reflections
+      </h2>
+      <dl className="flex flex-col gap-3">
+        {REFLECTION_QUESTIONS.map((q) => {
+          const v = (reflections[q.key] ?? "").trim();
+          if (!v) return null;
+          return (
+            <div key={q.key}>
+              <dt className="text-xs font-semibold text-neutral-700">
+                {q.label}
+              </dt>
+              <dd className="text-sm whitespace-pre-wrap text-neutral-800 mt-0.5">
+                {v}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </section>
+  );
+}
+
+// "Start over" edit pane — collapsed by default. Pre-fills with the saved
+// reflections so the user can tweak and regenerate without re-typing.
+function EditReflectionsBlock({
+  reflections,
+}: {
+  reflections: Reflections;
+}) {
+  return (
+    <details className="rounded border border-neutral-200 p-4">
+      <summary className="cursor-pointer text-sm font-semibold">
+        Edit reflections and regenerate
+      </summary>
+      <p className="text-xs text-neutral-500 mt-2 mb-4">
+        Tweaking your reflections and submitting will overwrite this
+        week&apos;s OODA Loop with a fresh generation.
+      </p>
+      <ReflectionForm
+        initial={reflections}
+        submitLabel="Regenerate with edited reflections"
+      />
+    </details>
+  );
 }
 
 // ---------------------------------------------------------------------------

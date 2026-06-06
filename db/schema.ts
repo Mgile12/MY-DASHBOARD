@@ -184,11 +184,14 @@ export type StandardCheckin = typeof standardCheckins.$inferSelect;
 export type NewStandardCheckin = typeof standardCheckins.$inferInsert;
 
 // weekly_reviews — PRD §17.7
-// One Sunday OODA per (user_id, week_start). week_start is the Monday of
+// One Sunday OODA Loop per (user_id, week_start). week_start is the Monday of
 // the week being reviewed. observe stores the computed scoreboard JSON,
 // orient is the AI's interpretation text, decisions stores the structured
 // rule + reasoning, next_week_rule is denormalised for fast lookup by
 // brief generation. report_text is the long-form weekly report.
+// reflections stores the user's own answers to the 6 OODA prompts —
+// it's the primary signal the AI uses for Orient/Decide alongside the
+// computed Observe.
 export const weeklyReviews = pgTable(
   "weekly_reviews",
   {
@@ -196,6 +199,7 @@ export const weeklyReviews = pgTable(
     userId: text("user_id").notNull(),
     weekStart: date("week_start", { mode: "string" }).notNull(),
     weekEnd: date("week_end", { mode: "string" }).notNull(),
+    reflections: jsonb("reflections"),
     observe: jsonb("observe").notNull(),
     orient: text("orient"),
     decisions: jsonb("decisions"),

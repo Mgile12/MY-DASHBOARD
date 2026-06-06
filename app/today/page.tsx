@@ -118,7 +118,7 @@ function SundayPlaceholder() {
       <p className="mt-1 text-neutral-600">
         Per PRD §10.3, Sunday has no morning brief. The{" "}
         <Link href="/weekly" className="underline font-medium">
-          Sunday OODA review
+          Sunday OODA Loop
         </Link>{" "}
         replaces it. Do that tonight.
       </p>

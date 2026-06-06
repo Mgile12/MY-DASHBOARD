@@ -66,21 +66,27 @@ function daysLeftInAestMonth(): number {
 }
 
 // ---------------------------------------------------------------------------
-// System prompt for the Sunday OODA
+// System prompt for the Sunday OODA Loop
 // ---------------------------------------------------------------------------
 
-const OODA_SYSTEM_PROMPT = `You are running Sunday OODA review for Mitchell. He's a solo consultant in Australia trying to close the gap to $10k AUD/mo. The data in the user message covers the week being reviewed.
+const OODA_SYSTEM_PROMPT = `You are running Sunday OODA Loop review for Mitchell. He's a solo consultant in Australia trying to close the gap to $10k AUD/mo. The data in the user message covers the week being reviewed.
+
+The user message has two kinds of signal:
+- "reflections" — Mitchell's own answers to six OODA prompts (goal, wins, dodged, obstacles, plan, one_thing). This is his self-report of where he stands. Treat it as the primary signal for his head and intent.
+- "observe" + "journals" + sales aggregates — the receipts. The data tells you WHAT happened. The reflections tell you what he THINKS happened.
+
+Your job is to cross-reference the two. When his reflections line up with the data, name the pattern. When they conflict (e.g. he says he "made good progress" but the calls number is 0), call it out — that's the highest-value signal in the whole review.
 
 Tone: brutal, direct, corrective. Inform ego, do not feed it. Reference receipts — numbers, dodges, named tasks. No flattery. No generic productivity advice.
 
 Your job:
-1. ORIENT — interpret the pattern. 2-4 sentences. What does the week actually say about how Mitchell operated? Where did the gap close? Where did he hide? Don't restate the data — interpret it.
-2. DECIDE — one operating rule for next week. Specific. Actionable. Numerical when possible. Examples:
+1. ORIENT — interpret the pattern. 3-5 sentences. What does the week actually say about how Mitchell operated? Where did the gap close? Where did he hide? Where do his reflections diverge from the data? Don't restate either — interpret them together.
+2. DECIDE — one operating rule for next week. Specific. Actionable. Numerical when possible. Start from his stated plan and "one_thing" — but sharpen them, narrow them, or replace them if the data says something more important. Examples:
    - "8am-10am cold call block is non-negotiable. Hit 30+ calls every weekday or no client delivery work after lunch."
    - "Two proposals out by Wednesday. If Tuesday EOD shows zero, block all client work Wednesday morning."
    - "No website/internal work until the Acme follow-up is done and a third proposal is sent."
    The rule must be ONE thing. Not three. Not five.
-3. REPORT_TEXT — 200-400 word weekly summary. Cover: scoreboard (calls/follow-ups/offers/revenue), what actually happened, what it means, repeated dodges, strongest receipts, next week's rule. Blunt. End with one sentence about what gets him to $10k.
+3. REPORT_TEXT — 200-400 word weekly summary. Cover: scoreboard (calls/follow-ups/offers/revenue), what actually happened, what it means, repeated dodges, strongest receipts, where reflections diverged from receipts, next week's rule. Blunt. End with one sentence about what gets him to $10k.
 
 Return ONLY this JSON. No markdown. No code fence.
 
@@ -318,8 +324,20 @@ export type GenerateOodaResult =
   | { ok: true; reviewId: string }
   | { ok: false; error: string };
 
+// Mirror of app/weekly/labels.ts Reflections — kept here too so lib/
+// doesn't import from app/. Both versions describe the same shape.
+export type Reflections = {
+  goal?: string;
+  wins?: string;
+  dodged?: string;
+  obstacles?: string;
+  plan?: string;
+  one_thing?: string;
+};
+
 export async function generateOodaReview(
   email: string,
+  reflections: Reflections = {},
 ): Promise<GenerateOodaResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "ANTHROPIC_API_KEY not set" };
@@ -360,6 +378,14 @@ export async function generateOodaReview(
     week_start: weekStart,
     week_end: weekEnd,
     villain: settings.villainDescription || "(no villain set)",
+    reflections: {
+      goal: reflections.goal ?? "",
+      wins: reflections.wins ?? "",
+      dodged: reflections.dodged ?? "",
+      obstacles: reflections.obstacles ?? "",
+      plan: reflections.plan ?? "",
+      one_thing: reflections.one_thing ?? "",
+    },
     observe,
     journals: journals.map((j) => ({
       date: j.date,
@@ -382,7 +408,9 @@ export async function generateOodaReview(
   };
 
   const userMessage =
-    "Run my Sunday OODA from this data. Return only the JSON object.\n\n" +
+    "Run my Sunday OODA Loop from this data. Cross-reference my reflections " +
+    "(what I think happened) against the observe + journals (what actually " +
+    "happened). Return only the JSON object.\n\n" +
     JSON.stringify(userPayload, null, 2);
 
   const anthropic = new Anthropic({ apiKey });
@@ -438,6 +466,7 @@ export async function generateOodaReview(
         userId: email,
         weekStart,
         weekEnd,
+        reflections,
         observe,
         orient: ooda.orient,
         decisions: ooda.decide,
@@ -448,6 +477,7 @@ export async function generateOodaReview(
         target: [weeklyReviews.userId, weeklyReviews.weekStart],
         set: {
           weekEnd,
+          reflections,
           observe,
           orient: ooda.orient,
           decisions: ooda.decide,

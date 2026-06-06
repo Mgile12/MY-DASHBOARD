@@ -116,7 +116,7 @@ function SundayPlaceholder() {
       <p className="mt-1 text-neutral-600">
         Per PRD §10.3, the{" "}
         <Link href="/weekly" className="underline font-medium">
-          Sunday OODA review
+          Sunday OODA Loop
         </Link>{" "}
         replaces the nightly journal. Do that tonight. Browse recent entries
         below if you want a reflection on the week.

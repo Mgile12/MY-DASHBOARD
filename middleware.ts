@@ -16,6 +16,10 @@ export default auth((req) => {
 });
 
 export const config = {
+  // Run middleware on Node.js runtime (Next 15.2+ experimental).
+  // Required because NextAuth v5's auth core uses __dirname and other
+  // Node-only globals that the Vercel Edge runtime doesn't expose.
+  runtime: "nodejs",
   // Protect everything except /api/auth/*, Next internals, static assets.
   matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
 };

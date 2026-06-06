@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { aestToday } from "@/lib/date";
 import {
@@ -18,13 +17,28 @@ import {
   type Reflections,
   type UsefulnessRating,
 } from "./labels";
+import {
+  Card,
+  FooterMeta,
+  HeroStat,
+  PageHeader,
+  PageShell,
+  Section,
+  StatBlock,
+  StatGrid,
+} from "@/app/_components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyPage() {
   const session = await auth();
   const email = session?.user?.email;
-  if (!email) return <main className="p-8">Not signed in.</main>;
+  if (!email)
+    return (
+      <PageShell>
+        <p className="text-neutral-500">Not signed in.</p>
+      </PageShell>
+    );
 
   const today = aestToday();
   const weekStart = currentWeekStart();
@@ -32,85 +46,43 @@ export default async function WeeklyPage() {
   const review = await getCurrentWeekReview(email);
 
   return (
-    <main className="p-8 max-w-3xl mx-auto">
-      <Header
-        email={email}
-        today={today}
-        weekStart={weekStart}
-        weekEnd={weekEnd}
+    <PageShell>
+      <PageHeader
+        title="Sunday OODA Loop"
+        subtitle={`${email} · week of ${weekStart} – ${weekEnd} · today ${today} AEST`}
+        current="weekly"
       />
-
       {review === null ? <EmptyState /> : <ReviewView review={review} />}
-    </main>
+    </PageShell>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Header / nav
-// ---------------------------------------------------------------------------
-
-function Header({
-  email,
-  today,
-  weekStart,
-  weekEnd,
-}: {
-  email: string;
-  today: string;
-  weekStart: string;
-  weekEnd: string;
-}) {
-  return (
-    <header className="mb-6 flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold">Sunday OODA Loop</h1>
-        <p className="text-sm text-neutral-500">
-          {email} · week of {weekStart} – {weekEnd} · today (AEST): {today}
-        </p>
-      </div>
-      <nav className="flex items-center gap-5 text-sm">
-        <Link href="/today" className="text-neutral-700 hover:underline">
-          Today
-        </Link>
-        <Link href="/journal" className="text-neutral-700 hover:underline">
-          Journal
-        </Link>
-        <Link href="/standards" className="text-neutral-700 hover:underline">
-          Standards
-        </Link>
-        <Link href="/settings" className="text-neutral-700 hover:underline">
-          Settings
-        </Link>
-      </nav>
-    </header>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Empty state — no review for this week. User answers reflections, those
-// feed the AI for Orient + Decide.
+// Empty state — user answers the six prompts, those drive AI generation
 // ---------------------------------------------------------------------------
 
 function EmptyState() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="rounded border border-neutral-200 p-5 text-sm text-neutral-700 bg-neutral-50 leading-6">
-        <p className="font-semibold">No OODA Loop for this week yet.</p>
-        <p className="mt-1 text-neutral-600">
+    <div className="space-y-6">
+      <Card>
+        <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-neutral-400">
+          No OODA Loop this week yet
+        </div>
+        <p className="mt-2 text-[14px] text-neutral-300 leading-relaxed">
           Answer the six prompts below. Your answers go to Claude alongside
           this week&apos;s journals, briefs, and sales numbers. Claude
           cross-references what you <em>think</em> happened against the
           receipts and produces Orient (the pattern) + Decide (next
           week&apos;s rule) + a weekly report.
         </p>
-      </div>
+      </Card>
       <ReflectionForm />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Review view — Observe + Reflections + Orient + Decide form + report
+// Review view
 // ---------------------------------------------------------------------------
 
 type DecisionsJson = { next_week_rule?: string; reasoning?: string };
@@ -132,7 +104,7 @@ function ReviewView({
     : "";
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="space-y-8">
       <ObserveBlock observe={observe} />
 
       <ReflectionsBlock reflections={reflections} />
@@ -151,12 +123,15 @@ function ReviewView({
 
       {review.reportText && <ReportBlock text={review.reportText} />}
 
-      <footer className="border-t border-neutral-200 pt-4 text-xs text-neutral-500 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          Generated: {formatAestTimestamp(review.createdAt ?? new Date())}
-        </span>
-        <GenerateOodaButton regenerate />
-      </footer>
+      <FooterMeta
+        left={
+          <span>
+            Generated{" "}
+            {formatAestTimestamp(review.createdAt ?? new Date())}
+          </span>
+        }
+        right={<GenerateOodaButton regenerate />}
+      />
 
       <EditReflectionsBlock reflections={reflections} />
     </div>
@@ -171,8 +146,7 @@ function isBehaviour(v: string | null): v is BehaviourChangedRating {
 }
 
 // ---------------------------------------------------------------------------
-// Reflections — read-only display of the user's saved OODA Loop answers.
-// (Edit-and-regenerate UI lives below the footer as a <details>.)
+// Reflections block (read-only display + edit pane)
 // ---------------------------------------------------------------------------
 
 function ReflectionsBlock({ reflections }: { reflections: Reflections }) {
@@ -182,43 +156,36 @@ function ReflectionsBlock({ reflections }: { reflections: Reflections }) {
   if (!hasAny) return null;
 
   return (
-    <section className="border-l-4 border-neutral-700 pl-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 mb-3">
-        Your reflections
-      </h2>
-      <dl className="flex flex-col gap-3">
-        {REFLECTION_QUESTIONS.map((q) => {
-          const v = (reflections[q.key] ?? "").trim();
-          if (!v) return null;
-          return (
-            <div key={q.key}>
-              <dt className="text-xs font-semibold text-neutral-700">
-                {q.label}
-              </dt>
-              <dd className="text-sm whitespace-pre-wrap text-neutral-800 mt-0.5">
-                {v}
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
-    </section>
+    <Section label="Your reflections">
+      <Card>
+        <dl className="space-y-4">
+          {REFLECTION_QUESTIONS.map((q) => {
+            const v = (reflections[q.key] ?? "").trim();
+            if (!v) return null;
+            return (
+              <div key={q.key} className="space-y-1">
+                <dt className="text-[11px] font-semibold tracking-[0.12em] uppercase text-neutral-500">
+                  {q.label}
+                </dt>
+                <dd className="text-[14px] text-neutral-200 whitespace-pre-wrap leading-relaxed">
+                  {v}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </Card>
+    </Section>
   );
 }
 
-// "Start over" edit pane — collapsed by default. Pre-fills with the saved
-// reflections so the user can tweak and regenerate without re-typing.
-function EditReflectionsBlock({
-  reflections,
-}: {
-  reflections: Reflections;
-}) {
+function EditReflectionsBlock({ reflections }: { reflections: Reflections }) {
   return (
-    <details className="rounded border border-neutral-200 p-4">
-      <summary className="cursor-pointer text-sm font-semibold">
+    <details className="rounded-2xl bg-neutral-900 p-5">
+      <summary className="cursor-pointer text-[14px] font-semibold text-neutral-200 hover:text-neutral-50 transition-colors">
         Edit reflections and regenerate
       </summary>
-      <p className="text-xs text-neutral-500 mt-2 mb-4">
+      <p className="text-[12px] text-neutral-500 mt-2 mb-4 leading-relaxed">
         Tweaking your reflections and submitting will overwrite this
         week&apos;s OODA Loop with a fresh generation.
       </p>
@@ -231,7 +198,7 @@ function EditReflectionsBlock({
 }
 
 // ---------------------------------------------------------------------------
-// Observe — PRD §12.8
+// Observe — stat-card scoreboard, matching /today's design
 // ---------------------------------------------------------------------------
 
 function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
@@ -240,109 +207,166 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
   const fmtN = (n: number) => n.toLocaleString("en-AU");
 
   return (
-    <section className="border border-black p-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 mb-3">
-        Observe — week of {o.week_start} – {o.week_end}
-      </h2>
+    <Section label={`Observe · ${o.week_start} – ${o.week_end}`}>
+      <HeroStat
+        label={`Gap · ${o.currency}/mo`}
+        value={`$${fmtMoney(o.gap)}`}
+        sub={`${o.days_left_in_month} days left this month`}
+      />
+      <StatGrid>
+        <StatBlock
+          label="Current"
+          value={`$${fmtMoney(o.current_monthly_revenue)}`}
+          delta={`${o.currency}/mo`}
+        />
+        <StatBlock
+          label="Target"
+          value={`$${fmtMoney(o.target_monthly_revenue)}`}
+          delta={`${o.currency}/mo`}
+        />
+      </StatGrid>
 
-      <div className="grid grid-cols-2 gap-y-1 text-sm font-mono">
-        <span>CURRENT</span>
-        <span className="text-right">
-          ${fmtMoney(o.current_monthly_revenue)} {o.currency}/mo
-        </span>
-        <span>TARGET</span>
-        <span className="text-right">
-          ${fmtMoney(o.target_monthly_revenue)} {o.currency}/mo
-        </span>
-        <span className="font-bold">GAP</span>
-        <span className="text-right font-bold">
-          ${fmtMoney(o.gap)} {o.currency}/mo
-        </span>
-        <span>DAYS LEFT THIS MONTH</span>
-        <span className="text-right">{o.days_left_in_month}</span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
-        <Row label="Calls" value={fmtN(o.calls_this_week)} />
-        <Row label="Follow-ups" value={fmtN(o.followups_this_week)} />
-        <Row label="Offers/proposals" value={fmtN(o.offers_this_week)} />
-        <Row
-          label="One-off revenue"
-          value={`$${fmtMoney(o.one_off_revenue_this_week)}`}
-        />
-        <Row
-          label="Recurring revenue"
-          value={`$${fmtMoney(o.recurring_revenue_this_week)}`}
-        />
-        <Row
-          label="Training sessions"
-          value={fmtN(o.training_completed)}
-        />
-        <Row
-          label="Cold-call blocks"
-          value={fmtN(o.cold_call_blocks_completed)}
-        />
-        <Row
-          label="Client-delivery blocks"
-          value={fmtN(o.client_delivery_blocks_completed)}
-        />
-        <Row
-          label="Journals completed"
-          value={`${o.journals_completed} / ${o.expected_journal_days}`}
-        />
-        <Row label="Skipped tasks" value={fmtN(o.skipped_tasks)} />
-        <Row label="Deferred tasks" value={fmtN(o.deferred_tasks)} />
-      </div>
+      <Card>
+        <div className="space-y-3 text-[14px]">
+          <Row label="Calls" value={fmtN(o.calls_this_week)} />
+          <Row
+            label="Follow-ups"
+            value={fmtN(o.followups_this_week)}
+            tone={o.followups_this_week > 0 ? "win" : "neutral"}
+          />
+          <Row
+            label="Offers / proposals"
+            value={fmtN(o.offers_this_week)}
+            tone={o.offers_this_week > 0 ? "win" : "neutral"}
+          />
+          <Row
+            label="One-off revenue"
+            value={`$${fmtMoney(o.one_off_revenue_this_week)}`}
+            tone={o.one_off_revenue_this_week > 0 ? "win" : "neutral"}
+          />
+          <Row
+            label="Recurring revenue"
+            value={`$${fmtMoney(o.recurring_revenue_this_week)}`}
+            tone={o.recurring_revenue_this_week > 0 ? "win" : "neutral"}
+          />
+          <div className="h-px bg-neutral-800" />
+          <Row
+            label="Training"
+            value={fmtN(o.training_completed)}
+            tone={o.training_completed > 0 ? "win" : "neutral"}
+          />
+          <Row
+            label="Cold-call blocks"
+            value={fmtN(o.cold_call_blocks_completed)}
+            tone={o.cold_call_blocks_completed > 0 ? "win" : "neutral"}
+          />
+          <Row
+            label="Client-delivery blocks"
+            value={fmtN(o.client_delivery_blocks_completed)}
+          />
+          <div className="h-px bg-neutral-800" />
+          <Row
+            label="Journals completed"
+            value={`${o.journals_completed} / ${o.expected_journal_days}`}
+            tone={
+              o.expected_journal_days > 0 &&
+              o.journals_completed === o.expected_journal_days
+                ? "win"
+                : o.journals_completed < o.expected_journal_days
+                  ? "danger"
+                  : "neutral"
+            }
+          />
+          <Row
+            label="Skipped tasks"
+            value={fmtN(o.skipped_tasks)}
+            tone={o.skipped_tasks > 0 ? "danger" : "neutral"}
+          />
+          <Row
+            label="Deferred tasks"
+            value={fmtN(o.deferred_tasks)}
+            tone={o.deferred_tasks > 0 ? "danger" : "neutral"}
+          />
+        </div>
+      </Card>
 
       {o.standards_streaks.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-500 mb-1">
+        <Card>
+          <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-neutral-500 mb-3">
             Standards streaks
-          </h3>
-          <ul className="text-sm">
+          </div>
+          <ul className="space-y-2 text-[14px]">
             {o.standards_streaks.map((s) => (
-              <li key={s.key} className="flex justify-between">
-                <span>{s.name}</span>
-                <span className="font-mono">{s.streak} day(s)</span>
+              <li key={s.key} className="flex items-center justify-between">
+                <span className="text-neutral-200">{s.name}</span>
+                <span
+                  className={`tabular-nums font-bold text-[16px] ${
+                    s.streak > 0 ? "text-green-400" : "text-neutral-600"
+                  }`}
+                >
+                  {s.streak}{" "}
+                  <span className="text-[11px] font-normal text-neutral-500 uppercase tracking-widest">
+                    day{s.streak === 1 ? "" : "s"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {o.repeated_dodges.length > 0 && (
+        <div className="rounded-2xl bg-red-500/10 ring-1 ring-red-500/30 p-5">
+          <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-red-400 mb-2">
+            Repeated dodges
+          </div>
+          <ul className="space-y-1.5 text-[14px] text-red-100">
+            {o.repeated_dodges.map((d, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-red-500/60">·</span>
+                <span>{d}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {o.repeated_dodges.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-red-700 mb-1">
-            Repeated dodges
-          </h3>
-          <ul className="text-sm list-disc list-inside text-neutral-800">
-            {o.repeated_dodges.map((d, i) => (
-              <li key={i}>{d}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {o.strongest_tale && (
-        <div className="mt-4 border-l-4 border-emerald-700 pl-3">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-emerald-800 mb-1">
-            Strongest tale — {o.strongest_tale.type} · {o.strongest_tale.date}
-          </h3>
-          <p className="text-sm text-neutral-800">
+        <div className="rounded-2xl bg-green-500/10 ring-1 ring-green-500/30 p-5">
+          <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-green-400 mb-2">
+            Strongest tale · {o.strongest_tale.type} · {o.strongest_tale.date}
+          </div>
+          <p className="text-[14px] text-green-50 leading-relaxed">
             {o.strongest_tale.summary}
           </p>
         </div>
       )}
-    </section>
+    </Section>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "win" | "danger";
+}) {
+  const numColor =
+    tone === "win"
+      ? "text-green-400"
+      : tone === "danger"
+        ? "text-red-400"
+        : "text-neutral-50";
   return (
-    <>
-      <span>{label}</span>
-      <span className="text-right font-mono">{value}</span>
-    </>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-neutral-300">{label}</span>
+      <span className={`tabular-nums font-bold text-[16px] ${numColor}`}>
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -352,33 +376,27 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function OrientBlock({ orient }: { orient: string }) {
   return (
-    <section className="border-l-4 border-black pl-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600">
-        Orient — what the pattern means
-      </h2>
-      <p className="mt-1 text-base leading-snug whitespace-pre-wrap">
-        {orient}
-      </p>
-    </section>
+    <Section label="Orient — what the pattern means">
+      <Card>
+        <p className="text-[16px] leading-relaxed whitespace-pre-wrap text-neutral-100">
+          {orient}
+        </p>
+      </Card>
+    </Section>
   );
 }
 
 function ReportBlock({ text }: { text: string }) {
   return (
-    <section>
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 mb-2">
-        Weekly report
-      </h2>
-      <p className="text-sm leading-6 whitespace-pre-wrap text-neutral-800">
-        {text}
-      </p>
-    </section>
+    <Section label="Weekly report">
+      <Card>
+        <p className="text-[14px] leading-relaxed whitespace-pre-wrap text-neutral-300">
+          {text}
+        </p>
+      </Card>
+    </Section>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Timestamp helper (matches /today)
-// ---------------------------------------------------------------------------
 
 function formatAestTimestamp(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { sendBriefToTelegramAction } from "./actions";
+import { btnGhost } from "@/app/_components/ui";
 
 export function TelegramButton() {
   const [pending, startTransition] = useTransition();
@@ -22,15 +23,15 @@ export function TelegramButton() {
             else setState({ kind: "error", error: r.error });
           });
         }}
-        className="px-3 py-1 rounded border border-neutral-400 text-xs disabled:opacity-50"
+        className={btnGhost + " text-[12px] px-3 py-1.5"}
       >
         {pending ? "Sending…" : "Send to Telegram"}
       </button>
       {state.kind === "ok" && (
-        <span className="text-xs text-green-700">sent</span>
+        <span className="text-[12px] text-green-400">sent</span>
       )}
       {state.kind === "error" && (
-        <pre className="text-xs text-red-600 whitespace-pre-wrap max-w-md">
+        <pre className="text-[12px] text-red-400 whitespace-pre-wrap max-w-md">
           {state.error}
         </pre>
       )}

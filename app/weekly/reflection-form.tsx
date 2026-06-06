@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { generateOodaAction } from "./actions";
 import { REFLECTION_QUESTIONS, type Reflections } from "./labels";
+import { btnPrimary, textareaCls } from "@/app/_components/ui";
 
 export function ReflectionForm({
   initial = {},
@@ -28,18 +29,21 @@ export function ReflectionForm({
       }}
     >
       {REFLECTION_QUESTIONS.map((q) => (
-        <div key={q.key} className="flex flex-col gap-1">
-          <label htmlFor={q.key} className="text-sm font-semibold">
+        <div key={q.key} className="flex flex-col gap-1.5">
+          <label
+            htmlFor={q.key}
+            className="text-[11px] font-semibold tracking-[0.14em] uppercase text-neutral-400"
+          >
             {q.label}
-            {q.required ? (
-              <span className="text-neutral-400 font-normal"></span>
-            ) : (
-              <span className="text-neutral-400 font-normal text-xs ml-2">
+            {!q.required && (
+              <span className="ml-2 text-neutral-600 font-normal normal-case tracking-normal text-[11px]">
                 (optional)
               </span>
             )}
           </label>
-          <p className="text-xs text-neutral-500 leading-snug">{q.helper}</p>
+          <p className="text-[12px] text-neutral-500 leading-snug">
+            {q.helper}
+          </p>
           <textarea
             id={q.key}
             name={q.key}
@@ -47,26 +51,23 @@ export function ReflectionForm({
             rows={q.rows}
             placeholder={q.placeholder}
             required={q.required}
-            className={inputCls}
+            className={textareaCls + " mt-1"}
           />
         </div>
       ))}
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
-        >
+      <div className="flex flex-col gap-2">
+        <button type="submit" disabled={pending} className={btnPrimary + " self-start"}>
           {pending ? "Generating…" : submitLabel}
         </button>
         {pending && (
-          <span className="text-xs text-neutral-500">
-            Calling Claude with your reflections + the week&apos;s receipts — usually 8–15s.
+          <span className="text-[12px] text-neutral-500">
+            Calling Claude with your reflections + the week&apos;s receipts.
+            Usually 8–15s.
           </span>
         )}
         {error && (
-          <pre className="text-red-600 text-xs whitespace-pre-wrap max-w-2xl">
+          <pre className="text-red-400 text-[12px] whitespace-pre-wrap max-w-full">
             {error}
           </pre>
         )}
@@ -74,6 +75,3 @@ export function ReflectionForm({
     </form>
   );
 }
-
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm bg-white text-black font-mono mt-1";

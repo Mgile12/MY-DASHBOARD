@@ -2,6 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { saveJournal, type JournalActionResult } from "./actions";
+import {
+  Card,
+  btnPrimary,
+  inputCls,
+  textareaCls,
+} from "@/app/_components/ui";
 
 type Initial = {
   moneyMoved: string;
@@ -38,7 +44,7 @@ export function JournalForm({
 
   return (
     <form
-      className="flex flex-col gap-8 max-w-2xl"
+      className="space-y-8"
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
@@ -49,19 +55,18 @@ export function JournalForm({
         });
       }}
     >
-      {/* MONEY MOVEMENT */}
-      <Section title="Money movement">
+      <FormSection title="Money movement">
         <Field label="What moved money today?">
           <textarea
             name="moneyMoved"
             defaultValue={initial.moneyMoved}
             rows={3}
-            className={inputCls}
+            className={textareaCls}
           />
         </Field>
 
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Cold calls made">
+          <Field label="Calls">
             <input
               name="callsMade"
               defaultValue={initial.callsMade}
@@ -69,7 +74,7 @@ export function JournalForm({
               className={inputCls}
             />
           </Field>
-          <Field label="Follow-ups completed">
+          <Field label="Follow-ups">
             <input
               name="followupsCompleted"
               defaultValue={initial.followupsCompleted}
@@ -77,7 +82,7 @@ export function JournalForm({
               className={inputCls}
             />
           </Field>
-          <Field label="Offers/proposals sent">
+          <Field label="Offers">
             <input
               name="offersSent"
               defaultValue={initial.offersSent}
@@ -92,12 +97,12 @@ export function JournalForm({
             name="followupsNotes"
             defaultValue={initial.followupsNotes}
             rows={2}
-            className={inputCls}
+            className={textareaCls}
           />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="One-off revenue won today">
+          <Field label="One-off revenue won">
             <input
               name="oneOffRevenueWon"
               defaultValue={initial.oneOffRevenueWon}
@@ -105,7 +110,7 @@ export function JournalForm({
               className={inputCls}
             />
           </Field>
-          <Field label="Recurring revenue won today">
+          <Field label="Recurring revenue won">
             <input
               name="recurringRevenueWon"
               defaultValue={initial.recurringRevenueWon}
@@ -114,66 +119,62 @@ export function JournalForm({
             />
           </Field>
         </div>
-      </Section>
+      </FormSection>
 
-      {/* DODGING */}
-      <Section title="Dodging">
+      <FormSection title="Dodging">
         <Field label="What did you dodge today?">
           <textarea
             name="dodged"
             defaultValue={initial.dodged}
             rows={3}
-            className={inputCls}
+            className={textareaCls}
           />
         </Field>
-      </Section>
+      </FormSection>
 
-      {/* REACTIVE PULLS */}
-      <Section title="Reactive pulls">
+      <FormSection title="Reactive pulls">
         <Field label="What pulled you reactive?">
           <textarea
             name="reactivePulls"
             defaultValue={initial.reactivePulls}
             rows={3}
-            className={inputCls}
+            className={textareaCls}
           />
         </Field>
-      </Section>
+      </FormSection>
 
-      {/* TOMORROW */}
-      <Section title="Tomorrow">
+      <FormSection title="Tomorrow">
         <Field label="What has to happen tomorrow no matter what?">
           <textarea
             name="tomorrowMust"
             defaultValue={initial.tomorrowMust}
             rows={3}
-            className={inputCls}
+            className={textareaCls}
           />
         </Field>
-      </Section>
+      </FormSection>
 
-      {/* STANDARDS */}
-      <Section title="Standards">
-        <Checkbox
+      <FormSection title="Standards">
+        <Toggle
           name="trainingCompleted"
           defaultChecked={initial.trainingCompleted}
           label="Training completed"
         />
         {showWeekdayStandards && (
-          <Checkbox
+          <Toggle
             name="coldCallingCompleted"
             defaultChecked={initial.coldCallingCompleted}
-            label="Cold calling 30 minutes completed"
+            label="Cold calling 30 min completed"
           />
         )}
         {showWeekdayStandards && (
           <>
-            <Checkbox
+            <Toggle
               name="clientDeliveryCompleted"
               defaultChecked={initial.clientDeliveryCompleted}
               label="Client delivery block completed"
             />
-            <Field label="What client delivery task did you complete?">
+            <Field label="Which client delivery task?">
               <input
                 name="clientDeliveryNotes"
                 defaultValue={initial.clientDeliveryNotes}
@@ -182,10 +183,9 @@ export function JournalForm({
             </Field>
           </>
         )}
-      </Section>
+      </FormSection>
 
-      {/* TALE TAG */}
-      <Section title="Tale tag (optional)">
+      <FormSection title="Tale tag (optional)">
         <Field label="If today was a Tale, what type?">
           <select
             name="taleType"
@@ -199,31 +199,24 @@ export function JournalForm({
             <option value="empowerment">Tale of Empowerment</option>
           </select>
         </Field>
-      </Section>
+      </FormSection>
 
       <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={btnPrimary}>
           {pending ? "Saving…" : "Save journal"}
         </button>
         {result?.ok === true && (
-          <span className="text-green-600 text-sm">saved</span>
+          <span className="text-green-400 text-[13px]">saved</span>
         )}
         {result?.ok === false && (
-          <span className="text-red-600 text-sm">{result.error}</span>
+          <span className="text-red-400 text-[13px]">{result.error}</span>
         )}
       </div>
     </form>
   );
 }
 
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm bg-white text-black";
-
-function Section({
+function FormSection({
   title,
   children,
 }: {
@@ -231,11 +224,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-700">
+    <section className="space-y-3">
+      <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-neutral-500">
         {title}
       </h2>
-      {children}
+      <Card>
+        <div className="space-y-4">{children}</div>
+      </Card>
     </section>
   );
 }
@@ -248,14 +243,16 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-neutral-400">
+        {label}
+      </span>
       {children}
     </label>
   );
 }
 
-function Checkbox({
+function Toggle({
   name,
   defaultChecked,
   label,
@@ -265,14 +262,19 @@ function Checkbox({
   label: string;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
+    <label className="flex items-center gap-3 cursor-pointer group/tg">
       <input
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="h-4 w-4"
+        className="sr-only"
       />
-      <span>{label}</span>
+      <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-neutral-800 ring-1 ring-neutral-700 transition-colors group-has-[:checked]/tg:bg-green-500 group-has-[:checked]/tg:ring-green-500">
+        <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-neutral-300 transition-transform translate-x-1 group-has-[:checked]/tg:translate-x-4 group-has-[:checked]/tg:bg-neutral-950" />
+      </span>
+      <span className="text-[14px] text-neutral-200 group-hover/tg:text-neutral-50 transition-colors">
+        {label}
+      </span>
     </label>
   );
 }

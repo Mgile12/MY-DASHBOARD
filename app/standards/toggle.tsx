@@ -28,15 +28,28 @@ export function ActiveToggle({
             else setError(r.error);
           });
         }}
-        className={`px-3 py-1 rounded text-xs font-semibold ${
+        className={`relative inline-flex h-6 w-11 items-center rounded-full ring-1 transition-colors disabled:opacity-50 ${
           active
-            ? "bg-black text-white"
-            : "bg-neutral-200 text-neutral-700"
-        } disabled:opacity-50`}
+            ? "bg-green-500 ring-green-500"
+            : "bg-neutral-800 ring-neutral-700"
+        }`}
+        aria-pressed={active}
+        aria-label={active ? "Active" : "Inactive"}
       >
-        {pending ? "…" : active ? "Active" : "Inactive"}
+        <span
+          className={`inline-block h-4 w-4 rounded-full transition-transform ${
+            active
+              ? "translate-x-6 bg-neutral-950"
+              : "translate-x-1 bg-neutral-300"
+          }`}
+        />
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {pending && (
+        <span className="text-[11px] text-neutral-500">…</span>
+      )}
+      {error && (
+        <span className="text-[11px] text-red-400">{error}</span>
+      )}
     </div>
   );
 }

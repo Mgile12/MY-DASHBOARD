@@ -2,6 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { saveSettings, type SettingsActionResult } from "./actions";
+import {
+  Card,
+  btnPrimary,
+  inputCls,
+  textareaCls,
+} from "@/app/_components/ui";
 
 type Initial = {
   currentMonthlyRevenue: string;
@@ -20,7 +26,7 @@ export function SettingsForm({ initial }: { initial: Initial }) {
 
   return (
     <form
-      className="flex flex-col gap-5 max-w-xl"
+      className="space-y-8"
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
@@ -31,109 +37,149 @@ export function SettingsForm({ initial }: { initial: Initial }) {
         });
       }}
     >
-      <Field label="Current monthly revenue">
-        <input
-          name="currentMonthlyRevenue"
-          defaultValue={initial.currentMonthlyRevenue}
-          inputMode="decimal"
-          className={inputCls}
-        />
-      </Field>
-
-      <Field label="Target monthly revenue">
-        <input
-          name="targetMonthlyRevenue"
-          defaultValue={initial.targetMonthlyRevenue}
-          inputMode="decimal"
-          className={inputCls}
-        />
-      </Field>
-
-      <Field label="Currency">
-        <input
-          name="currency"
-          defaultValue={initial.currency}
-          className={inputCls}
-        />
-      </Field>
-
-      <Field label="System prompt">
-        <textarea
-          name="systemPrompt"
-          defaultValue={initial.systemPrompt}
-          rows={6}
-          className={inputCls}
-        />
-      </Field>
-
-      <Field label="Villain description">
-        <textarea
-          name="villainDescription"
-          defaultValue={initial.villainDescription}
-          rows={10}
-          className={inputCls}
-        />
-      </Field>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Weekday brief time">
+      <FormSection title="Revenue">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Current monthly revenue">
+            <input
+              name="currentMonthlyRevenue"
+              defaultValue={initial.currentMonthlyRevenue}
+              inputMode="decimal"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Target monthly revenue">
+            <input
+              name="targetMonthlyRevenue"
+              defaultValue={initial.targetMonthlyRevenue}
+              inputMode="decimal"
+              className={inputCls}
+            />
+          </Field>
+        </div>
+        <Field label="Currency">
           <input
-            name="weekdayBriefTime"
-            type="time"
-            defaultValue={initial.weekdayBriefTime}
-            className={inputCls}
+            name="currency"
+            defaultValue={initial.currency}
+            className={inputCls + " max-w-[140px]"}
           />
         </Field>
-        <Field label="Saturday brief time">
-          <input
-            name="saturdayBriefTime"
-            type="time"
-            defaultValue={initial.saturdayBriefTime}
-            className={inputCls}
+      </FormSection>
+
+      <FormSection title="System prompt">
+        <Field
+          label="System prompt"
+          helper="The instruction Claude reads at the top of every brief. Use {{villain}} as a placeholder for the Villain description below."
+        >
+          <textarea
+            name="systemPrompt"
+            defaultValue={initial.systemPrompt}
+            rows={10}
+            className={textareaCls + " font-mono text-[13px] leading-relaxed"}
           />
         </Field>
-      </div>
+      </FormSection>
 
-      <Field label="Telegram chat ID (from env, read-only)">
-        <input
-          value={initial.telegramChatId}
-          readOnly
-          className={`${inputCls} opacity-60`}
-        />
-      </Field>
+      <FormSection title="Villain">
+        <Field
+          label="Villain description"
+          helper="The version of you you're fighting. Read at the top of every weekday brief."
+        >
+          <textarea
+            name="villainDescription"
+            defaultValue={initial.villainDescription}
+            rows={12}
+            className={textareaCls + " leading-relaxed"}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Brief schedule (AEST)">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Weekday">
+            <input
+              name="weekdayBriefTime"
+              type="time"
+              defaultValue={initial.weekdayBriefTime}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Saturday">
+            <input
+              name="saturdayBriefTime"
+              type="time"
+              defaultValue={initial.saturdayBriefTime}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Telegram">
+        <Field
+          label="Chat ID"
+          helper="Read-only — set as env var on Vercel."
+        >
+          <input
+            value={initial.telegramChatId}
+            readOnly
+            className={inputCls + " opacity-60 cursor-not-allowed"}
+          />
+        </Field>
+      </FormSection>
 
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={btnPrimary}>
           {pending ? "Saving…" : "Save"}
         </button>
         {result?.ok === true && (
-          <span className="text-green-600 text-sm">saved</span>
+          <span className="text-green-400 text-[13px]">saved</span>
         )}
         {result?.ok === false && (
-          <span className="text-red-600 text-sm">{result.error}</span>
+          <span className="text-red-400 text-[13px]">{result.error}</span>
         )}
       </div>
     </form>
   );
 }
 
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm bg-white text-black";
-
-function Field({
-  label,
+function FormSection({
+  title,
   children,
 }: {
-  label: string;
+  title: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <section className="space-y-3">
+      <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-neutral-500">
+        {title}
+      </h2>
+      <Card>
+        <div className="space-y-4">{children}</div>
+      </Card>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  helper,
+  children,
+}: {
+  label: string;
+  helper?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-neutral-400">
+        {label}
+      </span>
+      {helper && (
+        <span className="text-[12px] text-neutral-500 leading-snug">
+          {helper}
+        </span>
+      )}
       {children}
     </label>
   );

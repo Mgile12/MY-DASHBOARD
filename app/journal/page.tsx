@@ -5,6 +5,13 @@ import { db } from "@/db";
 import { journalEntries, type JournalEntry } from "@/db/schema";
 import { aestToday, aestDayOfWeek, isAestSunday } from "@/lib/date";
 import { JournalForm } from "./form";
+import {
+  Card,
+  PageHeader,
+  PageShell,
+  Pill,
+  Section,
+} from "@/app/_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +41,12 @@ async function getRecentEntries(email: string): Promise<JournalEntry[]> {
 export default async function JournalPage() {
   const session = await auth();
   const email = session?.user?.email;
-  if (!email) return <main className="p-8">Not signed in.</main>;
+  if (!email)
+    return (
+      <PageShell>
+        <p className="text-neutral-500">Not signed in.</p>
+      </PageShell>
+    );
 
   const today = aestToday();
   const dow = aestDayOfWeek();
@@ -44,8 +56,12 @@ export default async function JournalPage() {
   const todayEntry = isSunday ? null : await getTodayEntry(email, today);
 
   return (
-    <main className="p-8 max-w-3xl mx-auto">
-      <Header email={email} today={today} />
+    <PageShell>
+      <PageHeader
+        title="Nightly journal"
+        subtitle={`${email} · today ${today} AEST`}
+        current="journal"
+      />
 
       {isSunday ? (
         <SundayPlaceholder />
@@ -78,50 +94,31 @@ export default async function JournalPage() {
       )}
 
       <RecentEntries entries={recent} todayDate={today} />
-    </main>
-  );
-}
-
-function Header({ email, today }: { email: string; today: string }) {
-  return (
-    <header className="mb-6 flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold">Nightly journal</h1>
-        <p className="text-sm text-neutral-500">
-          {email} · today (AEST): {today}
-        </p>
-      </div>
-      <nav className="flex items-center gap-5 text-sm">
-        <Link href="/today" className="text-neutral-700 hover:underline">
-          Today
-        </Link>
-        <Link href="/weekly" className="text-neutral-700 hover:underline">
-          Weekly
-        </Link>
-        <Link href="/standards" className="text-neutral-700 hover:underline">
-          Standards
-        </Link>
-        <Link href="/settings" className="text-neutral-700 hover:underline">
-          Settings
-        </Link>
-      </nav>
-    </header>
+    </PageShell>
   );
 }
 
 function SundayPlaceholder() {
   return (
-    <div className="rounded border border-neutral-300 p-5 bg-neutral-50 text-sm leading-6 text-neutral-800">
-      <p className="font-semibold">Sunday — no journal today.</p>
-      <p className="mt-1 text-neutral-600">
+    <Card>
+      <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-neutral-400">
+        Sunday
+      </div>
+      <p className="mt-2 text-[16px] font-semibold text-neutral-50">
+        No journal today.
+      </p>
+      <p className="mt-2 text-[14px] text-neutral-400 leading-relaxed">
         Per PRD §10.3, the{" "}
-        <Link href="/weekly" className="underline font-medium">
+        <Link
+          href="/weekly"
+          className="underline decoration-neutral-500 underline-offset-4 hover:text-neutral-200"
+        >
           Sunday OODA Loop
         </Link>{" "}
         replaces the nightly journal. Do that tonight. Browse recent entries
         below if you want a reflection on the week.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -132,46 +129,42 @@ function RecentEntries({
   entries: JournalEntry[];
   todayDate: string;
 }) {
-  if (entries.length === 0) {
-    return (
-      <section className="mt-12 border-t border-neutral-200 pt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
-          Recent
-        </h2>
-        <p className="mt-2 text-sm text-neutral-500">No journals yet.</p>
-      </section>
-    );
-  }
-
   return (
-    <section className="mt-12 border-t border-neutral-200 pt-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 mb-3">
-        Recent journals (last {entries.length})
-      </h2>
-      <ul className="flex flex-col gap-2 text-sm">
-        {entries.map((e) => (
-          <li
-            key={e.id}
-            className="flex items-baseline justify-between border-b border-neutral-100 pb-2"
-          >
-            <span className="font-mono text-xs">
-              {e.date}
-              {e.date === todayDate && (
-                <span className="ml-2 text-green-700">· today</span>
-              )}
-            </span>
-            <span className="text-neutral-600 text-xs">
-              {e.callsMade ?? 0} calls · {e.followupsCompleted ?? 0} f/u ·{" "}
-              {e.offersSent ?? 0} offers
-              {e.taleType && (
-                <span className="ml-2 text-neutral-900 uppercase">
-                  · {e.taleType}
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className="mt-12">
+      <Section label={`Recent journals${entries.length > 0 ? ` · last ${entries.length}` : ""}`}>
+        {entries.length === 0 ? (
+          <Card>
+            <p className="text-[14px] text-neutral-500">No journals yet.</p>
+          </Card>
+        ) : (
+          <Card>
+            <ul className="divide-y divide-neutral-800">
+              {entries.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0 gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="tabular-nums text-[13px] font-semibold text-neutral-50">
+                      {e.date}
+                    </span>
+                    {e.date === todayDate && (
+                      <Pill variant="do">Today</Pill>
+                    )}
+                    {e.taleType && (
+                      <Pill variant="neutral">{e.taleType}</Pill>
+                    )}
+                  </div>
+                  <span className="text-[12px] text-neutral-500 tabular-nums shrink-0">
+                    {e.callsMade ?? 0} calls · {e.followupsCompleted ?? 0} f/u ·{" "}
+                    {e.offersSent ?? 0} offers
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </Section>
+    </div>
   );
 }

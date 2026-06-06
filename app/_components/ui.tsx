@@ -272,11 +272,11 @@ export function VillainNote({ text }: { text: string }) {
 
 export function HonestCallout({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl bg-red-500 text-red-50 p-5">
-      <div className="text-[11px] font-bold tracking-[0.16em] uppercase">
+    <div className="rounded-2xl bg-red-500 text-red-50 p-6 sm:p-7">
+      <div className="text-[11px] font-bold tracking-[0.18em] uppercase">
         Honest Callout
       </div>
-      <p className="mt-2 text-[17px] font-bold leading-snug">{text}</p>
+      <p className="mt-3 text-[20px] font-bold leading-[1.3]">{text}</p>
     </div>
   );
 }

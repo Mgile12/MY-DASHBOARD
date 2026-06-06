@@ -13,8 +13,6 @@ import {
   PageHeader,
   PageShell,
   Section,
-  StatBlock,
-  StatGrid,
   VillainNote,
   WarningCard,
 } from "@/app/_components/ui";
@@ -131,6 +129,11 @@ function PainBlock({ pb }: { pb: BriefPayload["pain_block"] }) {
   const fmt = (n: number) =>
     n.toLocaleString("en-AU", { maximumFractionDigits: 0 });
 
+  const cur = Math.max(0, pb.current_monthly_revenue);
+  const tgt = Math.max(1, pb.target_monthly_revenue);
+  const fillPct = Math.min(100, (cur / tgt) * 100);
+  const gapPct = Math.max(0, 100 - fillPct);
+
   return (
     <Section label="Pain">
       <HeroStat
@@ -138,18 +141,30 @@ function PainBlock({ pb }: { pb: BriefPayload["pain_block"] }) {
         value={`$${fmt(pb.gap)}`}
         sub={`${pb.days_left_in_month} days left this month`}
       />
-      <StatGrid>
-        <StatBlock
-          label="Current"
-          value={`$${fmt(pb.current_monthly_revenue)}`}
-          delta={`${pb.currency}/mo`}
-        />
-        <StatBlock
-          label="Target"
-          value={`$${fmt(pb.target_monthly_revenue)}`}
-          delta={`${pb.currency}/mo`}
-        />
-      </StatGrid>
+      <Card>
+        <div className="flex items-baseline justify-between text-[10px] font-semibold tracking-[0.18em] uppercase text-neutral-500">
+          <span>Current</span>
+          <span>Target</span>
+        </div>
+        <div className="mt-2 flex items-baseline justify-between text-[22px] font-extrabold tabular-nums">
+          <span className="text-neutral-50">${fmt(cur)}</span>
+          <span className="text-neutral-500">${fmt(tgt)}</span>
+        </div>
+        <div className="mt-3 h-2 rounded-full bg-neutral-800 overflow-hidden flex">
+          <div
+            className="bg-neutral-50 h-full transition-[width] duration-500"
+            style={{ width: `${fillPct}%` }}
+          />
+          <div
+            className="bg-red-500 h-full"
+            style={{ width: `${gapPct}%` }}
+          />
+        </div>
+        <div className="mt-2 flex items-baseline justify-between text-[12px] text-neutral-500 tabular-nums">
+          <span>{Math.round(fillPct)}% of target</span>
+          <span className="text-red-400">${fmt(pb.gap)} short</span>
+        </div>
+      </Card>
     </Section>
   );
 }
@@ -221,26 +236,26 @@ function SalesScoreboard({
               row.tone === "win-on-nonzero" && row.yest > 0
                 ? "text-green-400"
                 : row.yest === 0
-                  ? "text-neutral-600"
-                  : "text-neutral-50";
+                  ? "text-neutral-700"
+                  : "text-neutral-300";
             const weekColor =
               row.tone === "win-on-nonzero" && row.week > 0
                 ? "text-green-400"
                 : row.week === 0
-                  ? "text-neutral-600"
+                  ? "text-neutral-700"
                   : "text-neutral-50";
             return (
               <div key={row.label} className="contents">
-                <span className="text-[14px] text-neutral-300">
+                <span className="text-[14px] text-neutral-400">
                   {row.label}
                 </span>
                 <span
-                  className={`text-right text-[18px] font-bold tabular-nums ${yestColor}`}
+                  className={`text-right text-[17px] font-semibold tabular-nums ${yestColor}`}
                 >
                   {row.money ? `$${fmt(row.yest)}` : fmt(row.yest)}
                 </span>
                 <span
-                  className={`text-right text-[18px] font-bold tabular-nums ${weekColor}`}
+                  className={`text-right text-[24px] font-extrabold tabular-nums ${weekColor}`}
                 >
                   {row.money ? `$${fmt(row.week)}` : fmt(row.week)}
                 </span>

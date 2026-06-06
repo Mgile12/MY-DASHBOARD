@@ -1,4 +1,10 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
+
+// Instantiate NextAuth from the Edge-safe config only — importing
+// `@/auth` here would pull DB / Node-only deps into the Edge bundle and
+// fail the Vercel deploy.
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   // If unauthenticated and not already on the sign-in flow, redirect.
@@ -10,6 +16,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Protect everything except /api/auth/* and Next internals/static assets.
+  // Protect everything except /api/auth/*, Next internals, static assets.
   matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
 };

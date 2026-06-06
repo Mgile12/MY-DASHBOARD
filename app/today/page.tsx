@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth-session";
+import { requireSession } from "@/lib/auth-session";
 import { getTodayBrief, type BriefPayload } from "@/lib/brief";
 import { aestToday, isAestSunday } from "@/lib/date";
 import { GenerateButton } from "./generate-button";
@@ -23,15 +23,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function TodayPage() {
-  const session = await getSession();
-  const email = session?.email;
-  if (!email)
-    return (
-      <PageShell>
-        <p className="text-neutral-500">Not signed in.</p>
-      </PageShell>
-    );
-
+  const { email } = await requireSession();
   const today = aestToday();
   const sunday = isAestSunday();
 

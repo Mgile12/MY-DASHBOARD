@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/auth-session";
+import { requireSession } from "@/lib/auth-session";
 import { logoutAction } from "@/app/login/actions";
 import { db } from "@/db";
 import { userSettings, type UserSettings } from "@/db/schema";
@@ -51,17 +51,7 @@ async function getOrCreateSettings(email: string): Promise<UserSettings> {
 }
 
 export default async function SettingsPage() {
-  const session = await getSession();
-  const email = session?.email;
-
-  if (!email) {
-    return (
-      <PageShell>
-        <p className="text-neutral-500">Not signed in.</p>
-      </PageShell>
-    );
-  }
-
+  const { email } = await requireSession();
   const row = await getOrCreateSettings(email);
 
   return (

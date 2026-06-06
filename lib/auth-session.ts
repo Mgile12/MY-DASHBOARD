@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   SESSION_COOKIE_NAME,
   verifySession,
@@ -27,10 +28,21 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 /**
- * Convenience for Server Actions: returns the email or throws.
- * Use this only after you've already redirected unauthenticated users
- * (middleware does that for page navigations). For routes that must
- * never run without a session, throwing is fine — it bubbles up to a 500.
+ * For Server Components: returns the session or redirects to /login.
+ * Every page that requires auth should call this at the top.
+ *
+ * Since we no longer use middleware (Vercel Edge runtime was crashing),
+ * this is the only auth gate for pages.
+ */
+export async function requireSession(): Promise<SessionPayload> {
+  const s = await getSession();
+  if (!s) redirect("/login");
+  return s;
+}
+
+/**
+ * For Server Actions: returns the email or throws.
+ * Server Actions can't redirect — they return a result.
  */
 export async function requireEmail(): Promise<string> {
   const s = await getSession();

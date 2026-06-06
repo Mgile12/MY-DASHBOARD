@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth-session";
+import { requireSession } from "@/lib/auth-session";
 import { aestToday } from "@/lib/date";
 import {
   currentWeekStart,
@@ -31,15 +31,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyPage() {
-  const session = await getSession();
-  const email = session?.email;
-  if (!email)
-    return (
-      <PageShell>
-        <p className="text-neutral-500">Not signed in.</p>
-      </PageShell>
-    );
-
+  const { email } = await requireSession();
   const today = aestToday();
   const weekStart = currentWeekStart();
   const weekEnd = currentWeekEnd();

@@ -39,22 +39,16 @@ export function SettingsForm({ initial }: { initial: Initial }) {
     >
       <FormSection title="Revenue">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Current monthly revenue">
-            <input
-              name="currentMonthlyRevenue"
-              defaultValue={initial.currentMonthlyRevenue}
-              inputMode="decimal"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Target monthly revenue">
-            <input
-              name="targetMonthlyRevenue"
-              defaultValue={initial.targetMonthlyRevenue}
-              inputMode="decimal"
-              className={inputCls}
-            />
-          </Field>
+          <MoneyInput
+            name="currentMonthlyRevenue"
+            label="Current /mo"
+            defaultValue={initial.currentMonthlyRevenue}
+          />
+          <MoneyInput
+            name="targetMonthlyRevenue"
+            label="Target /mo"
+            defaultValue={initial.targetMonthlyRevenue}
+          />
         </div>
         <Field label="Currency">
           <input
@@ -158,6 +152,39 @@ function FormSection({
         <div className="space-y-4">{children}</div>
       </Card>
     </section>
+  );
+}
+
+// Stat-style money input — large bold number with $ prefix.
+// Mirrors the scoreboard typography pattern so the revenue numbers
+// (the whole point of the app) feel like the most important inputs.
+function MoneyInput({
+  name,
+  label,
+  defaultValue,
+}: {
+  name: string;
+  label: string;
+  defaultValue: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-neutral-400">
+        {label}
+      </span>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] font-bold text-neutral-600 tabular-nums">
+          $
+        </span>
+        <input
+          name={name}
+          defaultValue={defaultValue}
+          inputMode="decimal"
+          placeholder="0"
+          className="w-full rounded-xl bg-neutral-950 ring-1 ring-neutral-800 pl-7 pr-3.5 py-2.5 text-[22px] font-extrabold text-neutral-50 placeholder:text-neutral-700 focus:ring-2 focus:ring-neutral-50/40 focus:outline-none transition-shadow duration-150 tabular-nums text-right"
+        />
+      </div>
+    </label>
   );
 }
 

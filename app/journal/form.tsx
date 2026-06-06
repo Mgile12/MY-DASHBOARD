@@ -66,30 +66,21 @@ export function JournalForm({
         </Field>
 
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Calls">
-            <input
-              name="callsMade"
-              defaultValue={initial.callsMade}
-              inputMode="numeric"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Follow-ups">
-            <input
-              name="followupsCompleted"
-              defaultValue={initial.followupsCompleted}
-              inputMode="numeric"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Offers">
-            <input
-              name="offersSent"
-              defaultValue={initial.offersSent}
-              inputMode="numeric"
-              className={inputCls}
-            />
-          </Field>
+          <StatInput
+            name="callsMade"
+            label="Calls"
+            defaultValue={initial.callsMade}
+          />
+          <StatInput
+            name="followupsCompleted"
+            label="Follow-ups"
+            defaultValue={initial.followupsCompleted}
+          />
+          <StatInput
+            name="offersSent"
+            label="Offers"
+            defaultValue={initial.offersSent}
+          />
         </div>
 
         <Field label="Who did you follow up with?">
@@ -102,22 +93,20 @@ export function JournalForm({
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="One-off revenue won">
-            <input
-              name="oneOffRevenueWon"
-              defaultValue={initial.oneOffRevenueWon}
-              inputMode="decimal"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Recurring revenue won">
-            <input
-              name="recurringRevenueWon"
-              defaultValue={initial.recurringRevenueWon}
-              inputMode="decimal"
-              className={inputCls}
-            />
-          </Field>
+          <StatInput
+            name="oneOffRevenueWon"
+            label="One-off $"
+            defaultValue={initial.oneOffRevenueWon}
+            mode="decimal"
+            prefix="$"
+          />
+          <StatInput
+            name="recurringRevenueWon"
+            label="Recurring $"
+            defaultValue={initial.recurringRevenueWon}
+            mode="decimal"
+            prefix="$"
+          />
         </div>
       </FormSection>
 
@@ -232,6 +221,45 @@ function FormSection({
         <div className="space-y-4">{children}</div>
       </Card>
     </section>
+  );
+}
+
+// Stat-style number input — tiny uppercase label, large bold input.
+// Mirrors the scoreboard typography pattern so logging the day's calls /
+// revenue feels like updating a scoreboard, not filling out a form.
+function StatInput({
+  name,
+  label,
+  defaultValue,
+  mode = "numeric",
+  prefix,
+}: {
+  name: string;
+  label: string;
+  defaultValue: string;
+  mode?: "numeric" | "decimal";
+  prefix?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-neutral-400">
+        {label}
+      </span>
+      <div className="relative">
+        {prefix && (
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] font-bold text-neutral-600 tabular-nums">
+            {prefix}
+          </span>
+        )}
+        <input
+          name={name}
+          defaultValue={defaultValue}
+          inputMode={mode}
+          placeholder="0"
+          className={`w-full rounded-xl bg-neutral-950 ring-1 ring-neutral-800 ${prefix ? "pl-7" : "pl-3.5"} pr-3.5 py-2.5 text-[22px] font-extrabold text-neutral-50 placeholder:text-neutral-700 focus:ring-2 focus:ring-neutral-50/40 focus:outline-none transition-shadow duration-150 tabular-nums text-right`}
+        />
+      </div>
+    </label>
   );
 }
 

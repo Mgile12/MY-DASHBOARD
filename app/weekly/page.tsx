@@ -24,8 +24,6 @@ import {
   PageHeader,
   PageShell,
   Section,
-  StatBlock,
-  StatGrid,
 } from "@/app/_components/ui";
 
 export const dynamic = "force-dynamic";
@@ -198,6 +196,12 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
     n.toLocaleString("en-AU", { maximumFractionDigits: 0 });
   const fmtN = (n: number) => n.toLocaleString("en-AU");
 
+  // Same progress-bar treatment as /today's Pain block.
+  const cur = Math.max(0, o.current_monthly_revenue);
+  const tgt = Math.max(1, o.target_monthly_revenue);
+  const fillPct = Math.min(100, (cur / tgt) * 100);
+  const gapPct = Math.max(0, 100 - fillPct);
+
   return (
     <Section label={`Observe · ${o.week_start} – ${o.week_end}`}>
       <HeroStat
@@ -205,59 +209,71 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
         value={`$${fmtMoney(o.gap)}`}
         sub={`${o.days_left_in_month} days left this month`}
       />
-      <StatGrid>
-        <StatBlock
-          label="Current"
-          value={`$${fmtMoney(o.current_monthly_revenue)}`}
-          delta={`${o.currency}/mo`}
-        />
-        <StatBlock
-          label="Target"
-          value={`$${fmtMoney(o.target_monthly_revenue)}`}
-          delta={`${o.currency}/mo`}
-        />
-      </StatGrid>
+      <Card>
+        <div className="flex items-baseline justify-between text-[10px] font-semibold tracking-[0.18em] uppercase text-neutral-500">
+          <span>Current</span>
+          <span>Target</span>
+        </div>
+        <div className="mt-2 flex items-baseline justify-between text-[22px] font-extrabold tabular-nums">
+          <span className="text-neutral-50">${fmtMoney(cur)}</span>
+          <span className="text-neutral-500">${fmtMoney(tgt)}</span>
+        </div>
+        <div className="mt-3 h-2 rounded-full bg-neutral-800 overflow-hidden flex">
+          <div
+            className="bg-neutral-50 h-full transition-[width] duration-500"
+            style={{ width: `${fillPct}%` }}
+          />
+          <div
+            className="bg-red-500 h-full"
+            style={{ width: `${gapPct}%` }}
+          />
+        </div>
+        <div className="mt-2 flex items-baseline justify-between text-[12px] text-neutral-500 tabular-nums">
+          <span>{Math.round(fillPct)}% of target</span>
+          <span className="text-red-400">${fmtMoney(o.gap)} short</span>
+        </div>
+      </Card>
 
       <Card>
-        <div className="space-y-3 text-[14px]">
-          <Row label="Calls" value={fmtN(o.calls_this_week)} />
-          <Row
+        <div className="space-y-4">
+          <BigRow label="Calls" value={fmtN(o.calls_this_week)} />
+          <BigRow
             label="Follow-ups"
             value={fmtN(o.followups_this_week)}
             tone={o.followups_this_week > 0 ? "win" : "neutral"}
           />
-          <Row
+          <BigRow
             label="Offers / proposals"
             value={fmtN(o.offers_this_week)}
             tone={o.offers_this_week > 0 ? "win" : "neutral"}
           />
-          <Row
+          <BigRow
             label="One-off revenue"
             value={`$${fmtMoney(o.one_off_revenue_this_week)}`}
             tone={o.one_off_revenue_this_week > 0 ? "win" : "neutral"}
           />
-          <Row
+          <BigRow
             label="Recurring revenue"
             value={`$${fmtMoney(o.recurring_revenue_this_week)}`}
             tone={o.recurring_revenue_this_week > 0 ? "win" : "neutral"}
           />
           <div className="h-px bg-neutral-800" />
-          <Row
+          <BigRow
             label="Training"
             value={fmtN(o.training_completed)}
             tone={o.training_completed > 0 ? "win" : "neutral"}
           />
-          <Row
+          <BigRow
             label="Cold-call blocks"
             value={fmtN(o.cold_call_blocks_completed)}
             tone={o.cold_call_blocks_completed > 0 ? "win" : "neutral"}
           />
-          <Row
+          <BigRow
             label="Client-delivery blocks"
             value={fmtN(o.client_delivery_blocks_completed)}
           />
           <div className="h-px bg-neutral-800" />
-          <Row
+          <BigRow
             label="Journals completed"
             value={`${o.journals_completed} / ${o.expected_journal_days}`}
             tone={
@@ -269,12 +285,12 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
                   : "neutral"
             }
           />
-          <Row
+          <BigRow
             label="Skipped tasks"
             value={fmtN(o.skipped_tasks)}
             tone={o.skipped_tasks > 0 ? "danger" : "neutral"}
           />
-          <Row
+          <BigRow
             label="Deferred tasks"
             value={fmtN(o.deferred_tasks)}
             tone={o.deferred_tasks > 0 ? "danger" : "neutral"}
@@ -283,28 +299,32 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
       </Card>
 
       {o.standards_streaks.length > 0 && (
-        <Card>
+        <div>
           <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-neutral-500 mb-3">
             Standards streaks
           </div>
-          <ul className="space-y-2 text-[14px]">
+          <div className="grid grid-cols-2 gap-3">
             {o.standards_streaks.map((s) => (
-              <li key={s.key} className="flex items-center justify-between">
-                <span className="text-neutral-200">{s.name}</span>
-                <span
-                  className={`tabular-nums font-bold text-[16px] ${
-                    s.streak > 0 ? "text-green-400" : "text-neutral-600"
-                  }`}
-                >
-                  {s.streak}{" "}
-                  <span className="text-[11px] font-normal text-neutral-500 uppercase tracking-widest">
-                    day{s.streak === 1 ? "" : "s"}
+              <div key={s.key} className="rounded-2xl bg-neutral-900 p-4">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 truncate">
+                  {s.name}
+                </div>
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  <span
+                    className={`text-[32px] font-extrabold tabular-nums leading-none ${
+                      s.streak > 0 ? "text-green-400" : "text-neutral-700"
+                    }`}
+                  >
+                    {s.streak}
                   </span>
-                </span>
-              </li>
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">
+                    {s.streak === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              </div>
             ))}
-          </ul>
-        </Card>
+          </div>
+        </div>
       )}
 
       {o.repeated_dodges.length > 0 && (
@@ -337,7 +357,7 @@ function ObserveBlock({ observe: o }: { observe: ObservePayload }) {
   );
 }
 
-function Row({
+function BigRow({
   label,
   value,
   tone = "neutral",
@@ -346,16 +366,20 @@ function Row({
   value: string;
   tone?: "neutral" | "win" | "danger";
 }) {
-  const numColor =
-    tone === "win"
+  // Zero is treated as a separate visual state — dim out to make actual
+  // activity (or lack of it) immediately obvious. Same rule as /today.
+  const isZero = value === "0" || value === "$0";
+  const numColor = isZero
+    ? "text-neutral-700"
+    : tone === "win"
       ? "text-green-400"
       : tone === "danger"
         ? "text-red-400"
         : "text-neutral-50";
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-neutral-300">{label}</span>
-      <span className={`tabular-nums font-bold text-[16px] ${numColor}`}>
+      <span className="text-[14px] text-neutral-400">{label}</span>
+      <span className={`tabular-nums font-extrabold text-[22px] ${numColor}`}>
         {value}
       </span>
     </div>

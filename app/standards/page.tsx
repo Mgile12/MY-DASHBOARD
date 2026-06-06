@@ -72,36 +72,44 @@ export default async function StandardsPage() {
 
       <div className="mt-6 space-y-3">
         {stds.map((s) => (
-          <div key={s.id} className="rounded-2xl bg-neutral-900 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-[16px] font-semibold text-neutral-50">
-                  {s.name}
-                </h2>
-                {s.description && (
-                  <p className="text-[13px] text-neutral-400 mt-1 leading-snug">
-                    {s.description}
-                  </p>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-[10px] font-semibold tracking-[0.16em] uppercase text-neutral-500">
-                  Streak
-                </div>
+          <div
+            key={s.id}
+            className={`rounded-2xl bg-neutral-900 p-5 transition-opacity duration-200 ${
+              s.active ? "" : "opacity-60"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              {/* Big streak number — leaderboard left column */}
+              <div className="shrink-0 text-center">
                 <div
-                  className={`text-3xl font-extrabold tabular-nums leading-none mt-1 ${
-                    s.streak > 0 ? "text-green-400" : "text-neutral-600"
+                  className={`text-[48px] sm:text-[56px] font-extrabold tabular-nums leading-[0.85] ${
+                    s.streak > 0 ? "text-green-400" : "text-neutral-700"
                   }`}
                 >
                   {s.streak}
                 </div>
+                <div className="mt-1 text-[10px] font-semibold tracking-[0.14em] uppercase text-neutral-500">
+                  {s.streak === 1 ? "day" : "days"}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-neutral-800">
-              <Pill variant="neutral">
-                {daysSummary(s.activeDays)}
-              </Pill>
-              <ActiveToggle standardId={s.id} initialActive={s.active} />
+
+              {/* Name + description + active-days + toggle */}
+              <div className="flex-1 min-w-0 pt-1">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-[16px] font-semibold text-neutral-50 leading-snug">
+                    {s.name}
+                  </h2>
+                  <ActiveToggle standardId={s.id} initialActive={s.active} />
+                </div>
+                {s.description && (
+                  <p className="text-[13px] text-neutral-400 mt-1.5 leading-snug">
+                    {s.description}
+                  </p>
+                )}
+                <div className="mt-3">
+                  <Pill variant="neutral">{daysSummary(s.activeDays)}</Pill>
+                </div>
+              </div>
             </div>
           </div>
         ))}

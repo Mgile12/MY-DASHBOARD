@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { briefs, briefItems } from "@/db/schema";
 import {
@@ -20,8 +20,8 @@ import { SKIP_CATEGORIES } from "./skip-categories";
 // ---------------------------------------------------------------------------
 
 export async function generateBriefAction(): Promise<GenerateResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const result = await generateBriefForToday(email);
@@ -39,8 +39,8 @@ export type TelegramActionResult =
   | { ok: false; error: string };
 
 export async function sendBriefToTelegramAction(): Promise<TelegramActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const brief = await getTodayBrief(email);
@@ -81,8 +81,8 @@ async function ownedItem(itemId: string, email: string) {
 export async function markDoneAction(
   itemId: string,
 ): Promise<TaskActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
   const owned = await ownedItem(itemId, email);
   if (!owned) return { ok: false, error: "Item not found" };
@@ -111,8 +111,8 @@ export async function markSkippedAction(
   itemId: string,
   formData: FormData,
 ): Promise<TaskActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
   const owned = await ownedItem(itemId, email);
   if (!owned) return { ok: false, error: "Item not found" };
@@ -154,8 +154,8 @@ export async function markDeferredAction(
   itemId: string,
   formData: FormData,
 ): Promise<TaskActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
   const owned = await ownedItem(itemId, email);
   if (!owned) return { ok: false, error: "Item not found" };
@@ -204,8 +204,8 @@ export async function markDeferredAction(
 export async function resetItemAction(
   itemId: string,
 ): Promise<TaskActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
   const owned = await ownedItem(itemId, email);
   if (!owned) return { ok: false, error: "Item not found" };

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 import {
   getStandardsWithStreaks,
   seedDefaultStandards,
@@ -46,8 +46,8 @@ function daysSummary(activeDays: string[] | null): string {
 }
 
 export default async function StandardsPage() {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email)
     return (
       <PageShell>

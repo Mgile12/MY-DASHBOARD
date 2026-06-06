@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { userSettings } from "@/db/schema";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 
 const settingsSchema = z.object({
   currentMonthlyRevenue: z
@@ -44,8 +44,8 @@ export type SettingsActionResult =
 export async function saveSettings(
   formData: FormData
 ): Promise<SettingsActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const raw = {

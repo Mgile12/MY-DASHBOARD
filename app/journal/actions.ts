@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { journalEntries } from "@/db/schema";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 import { aestToday, isAestSunday } from "@/lib/date";
 import {
   seedDefaultStandards,
@@ -63,8 +63,8 @@ export type JournalActionResult =
 export async function saveJournal(
   formData: FormData,
 ): Promise<JournalActionResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   if (isAestSunday()) {

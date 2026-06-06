@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { weeklyReviews } from "@/db/schema";
 import {
@@ -39,8 +39,8 @@ function reflectionsSchema() {
 export async function generateOodaAction(
   formData: FormData,
 ): Promise<GenerateOodaResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const raw: Record<string, string> = {};
@@ -66,8 +66,8 @@ export async function generateOodaAction(
 // ---------------------------------------------------------------------------
 
 export async function regenerateOodaAction(): Promise<GenerateOodaResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const weekStart = currentWeekStart();
@@ -135,8 +135,8 @@ export type SaveOodaResult = { ok: true } | { ok: false; error: string };
 export async function saveOodaAction(
   formData: FormData,
 ): Promise<SaveOodaResult> {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email) return { ok: false, error: "Not signed in" };
 
   const parsed = saveSchema.safeParse({

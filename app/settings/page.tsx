@@ -1,7 +1,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { auth, signOut } from "@/auth";
+import { getSession } from "@/lib/auth-session";
+import { logoutAction } from "@/app/login/actions";
 import { db } from "@/db";
 import { userSettings, type UserSettings } from "@/db/schema";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/default-system-prompt";
@@ -50,8 +51,8 @@ async function getOrCreateSettings(email: string): Promise<UserSettings> {
 }
 
 export default async function SettingsPage() {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
 
   if (!email) {
     return (
@@ -86,13 +87,7 @@ export default async function SettingsPage() {
         }}
       />
 
-      <form
-        className="mt-10 border-t border-neutral-900 pt-6"
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: "/api/auth/signin" });
-        }}
-      >
+      <form className="mt-10 border-t border-neutral-900 pt-6" action={logoutAction}>
         <button
           type="submit"
           className="text-[12px] uppercase tracking-[0.14em] text-neutral-500 hover:text-neutral-200 transition-colors"

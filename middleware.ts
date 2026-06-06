@@ -1,40 +1,32 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Edge-safe middleware: no NextAuth import, no jose, no Node-only deps.
-// We just check for the presence of the NextAuth session cookie. Full
-// JWT validation happens in the page / route handler via `auth()` from
-// auth.ts, which runs in the Node serverless runtime.
-//
-// Trade-off: a fake/expired cookie will pass middleware but get rejected
-// server-side. Pages already defensively handle a missing session
-// (`if (!email) return <Not signed in />`), so this is safe.
+// Edge-safe middleware. No NextAuth. No jose. Just checks for the
+// presence of the signed session cookie set by /app/login/actions.ts.
+// The cookie's signature is verified server-side in lib/auth-session.ts;
+// here we only check presence, which is enough to gate route access.
 
-const SESSION_COOKIES = [
-  // NextAuth v5 default cookie names.
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
-];
+const SESSION_COOKIE = "ms_session";
 
 export function middleware(req: NextRequest) {
-  // Always allow /api/auth/* (the matcher already excludes it, but be defensive).
-  if (req.nextUrl.pathname.startsWith("/api/auth")) {
+  // Always allow /login through, even when there's no session.
+  if (req.nextUrl.pathname.startsWith("/login")) {
     return NextResponse.next();
   }
 
-  const hasSession = SESSION_COOKIES.some((name) =>
-    req.cookies.has(name),
-  );
-
+  const hasSession = req.cookies.has(SESSION_COOKIE);
   if (!hasSession) {
-    const signInUrl = new URL("/api/auth/signin", req.nextUrl.origin);
-    signInUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
-    return NextResponse.redirect(signInUrl);
+    const loginUrl = new URL("/login", req.nextUrl.origin);
+    if (req.nextUrl.pathname !== "/") {
+      loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  // Protect everything except /api/auth/*, Next internals, and static assets.
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Protect everything except /login, /api/cron (cron has its own auth),
+  // Next internals, and static assets.
+  matcher: ["/((?!login|api/cron|_next/static|_next/image|favicon.ico).*)"],
 };

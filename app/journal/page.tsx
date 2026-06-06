@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { journalEntries, type JournalEntry } from "@/db/schema";
 import { aestToday, aestDayOfWeek, isAestSunday } from "@/lib/date";
@@ -39,8 +39,8 @@ async function getRecentEntries(email: string): Promise<JournalEntry[]> {
 }
 
 export default async function JournalPage() {
-  const session = await auth();
-  const email = session?.user?.email;
+  const session = await getSession();
+  const email = session?.email;
   if (!email)
     return (
       <PageShell>
